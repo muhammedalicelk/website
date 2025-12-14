@@ -465,19 +465,30 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
   const togglePlay = () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      console.error('Audio element bulunamadı');
+      return;
+    }
 
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
     } else {
       audio.currentTime = dosya.trimStart;
-      audio.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.error('Oynatma hatası:', err);
-        setIsPlaying(false);
-      });
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Oynatma başladı');
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.error('Oynatma hatası:', err.name, err.message);
+            alert('Ses çalınamadı. Lütfen tarayıcınızın ses iznini kontrol edin veya sayfayı yenileyin.');
+            setIsPlaying(false);
+          });
+      }
     }
   };
 
@@ -506,7 +517,12 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
   return (
     <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
-      <audio ref={audioRef} src={dosya.url} preload="metadata" />
+      <audio 
+        ref={audioRef} 
+        src={dosya.url} 
+        preload="metadata"
+        onError={(e) => console.error('Audio yükleme hatası:', e)}
+      />
       
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -519,6 +535,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
                 ? 'bg-purple-100 hover:bg-purple-200' 
                 : 'bg-gray-100 cursor-not-allowed'
             }`}
+            title={!dosya.isReady ? 'Dosya hazırlanıyor...' : isPlaying ? 'Durdur' : 'Oynat'}
           >
             {isPlaying ? (
               <Pause className="w-4 h-4 text-purple-600" />
@@ -539,6 +556,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           type="button"
           onClick={() => onRemove(dosya.id)}
           className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0"
+          title="Dosyayı Kaldır"
         >
           <X className="w-4 h-4 text-red-600" />
         </button>
