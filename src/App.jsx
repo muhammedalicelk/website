@@ -635,7 +635,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             </div>
             <input
               type="range"
-              min={Math.min(dosya.trimStart + 0.1, dosya.duration)}
+              min="0.1"
               max={dosya.duration}
               step="0.1"
               value={dosya.trimEnd}
@@ -646,11 +646,11 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               }}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>Min: {formatTime(dosya.trimStart + 0.1)}</span>
-              <span>Max: {formatTime(dosya.duration)}</span>
+              <span>0:00</span>
+              <span>{formatTime(dosya.duration)}</span>
             </div>
             <p className="text-xs text-gray-500 mt-1 italic">
-              ℹ️ Maksimum seçilebilir süre: {formatTime(Math.min(310, dosya.duration - dosya.trimStart))}
+              ℹ️ İstediğiniz bitiş noktasını seçin (max 310 saniye önerilir)
             </p>
           </div>
 
