@@ -601,9 +601,9 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             ) : (
               <span className="text-xs text-green-600">✓ Hazır - Toplam: {formatTime(dosya.duration)}</span>
             )}
-            <div className="text-[11px] text-gray-500 mt-1">
-              İpucu: <b>SHIFT</b> = ultra hassas · Mouse wheel = mikro ayar
-            </div>
+         <div className="text-[11px] text-gray-500 mt-1">
+        İpucu: Hassas ayar için <b>SHIFT</b> + <b>mouse tekerleğini</b> kullanınız
+         </div>
           </div>
         </div>
 
