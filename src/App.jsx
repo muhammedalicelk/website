@@ -538,52 +538,18 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
   const handleStartChange = (e) => {
     const newStart = parseFloat(e.target.value);
-    const maxEnd = Math.min(newStart + 310, dosya.duration);
     
-    // Eğer yeni başlangıç, mevcut bitişten büyükse, bitişi de ayarla
-    if (newStart >= dosya.trimEnd) {
-      onUpdate(dosya.id, { 
-        trimStart: newStart,
-        trimEnd: maxEnd
-      });
-    } else {
-      // Sadece başlangıcı güncelle, bitiş aynı kalsın (310 sınırı içinde)
-      const newEnd = Math.min(dosya.trimEnd, newStart + 310);
-      onUpdate(dosya.id, { 
-        trimStart: newStart,
-        trimEnd: newEnd
-      });
-    }
+    // Sadece başlangıcı güncelle, bitişe DOKUNMA
+    onUpdate(dosya.id, { 
+      trimStart: newStart
+    });
   };
 
   const handleEndChange = (e) => {
     const newEnd = parseFloat(e.target.value);
     
-    console.log('Bitiş değişti:', {
-      newEnd,
-      trimStart: dosya.trimStart,
-      duration: dosya.duration,
-      diff: newEnd - dosya.trimStart
-    });
-    
-    // Minimum bitiş = başlangıç + 0.1 saniye
-    const minEnd = dosya.trimStart + 0.1;
-    
-    // Maksimum bitiş = başlangıç + 310 saniye VEYA dosya sonu (hangisi küçükse)
-    const maxAllowedEnd = Math.min(dosya.trimStart + 310, dosya.duration);
-    
-    // Değeri sınırlar içinde tut
-    let finalEnd = newEnd;
-    if (finalEnd < minEnd) {
-      finalEnd = minEnd;
-    }
-    if (finalEnd > maxAllowedEnd) {
-      finalEnd = maxAllowedEnd;
-    }
-    
-    console.log('Final bitiş değeri:', finalEnd);
-    
-    onUpdate(dosya.id, { trimEnd: finalEnd });
+    // Direkt güncelle, herhangi bir sınırlama yapma
+    onUpdate(dosya.id, { trimEnd: newEnd });
   };
 
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
