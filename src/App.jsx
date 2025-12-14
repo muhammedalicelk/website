@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Music, Upload, Globe, User, Check, Play, Pause, X, AlertCircle } from 'lucide-react';
+import { Music, Upload, Globe, User, Play, Pause, X, AlertCircle } from 'lucide-react';
 
 /* =========================================================
    ✅ HAZIR MÜZİK KATALOĞU
@@ -41,10 +41,20 @@ export default function SesliOyuncakSiparis() {
     musteriAdi: '',
     telefon: '',
     muzikSecimi: 'hazir',
-    hazirMuzikId: '', // ✅ artık ID
+    hazirMuzikId: '',
     yukluDosyalar: [],
     youtubeLink: ''
   });
+
+  // ✅ Unmount olunca tüm URL'leri temizle (memory leak olmasın)
+  useEffect(() => {
+    return () => {
+      for (const f of formData.yukluDosyalar) {
+        if (f?.url) URL.revokeObjectURL(f.url);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
@@ -64,13 +74,22 @@ export default function SesliOyuncakSiparis() {
       yukluDosyalar: [...prev.yukluDosyalar, ...newFiles],
       muzikSecimi: 'yukle'
     }));
+
+    // aynı dosyayı tekrar seçebilmek için input reset
+    e.target.value = '';
   };
 
+  // ✅ Silince objectURL revoke et
   const removeDosya = (id) => {
-    setFormData((prev) => ({
-      ...prev,
-      yukluDosyalar: prev.yukluDosyalar.filter((f) => f.id !== id)
-    }));
+    setFormData((prev) => {
+      const target = prev.yukluDosyalar.find((f) => f.id === id);
+      if (target?.url) URL.revokeObjectURL(target.url);
+
+      return {
+        ...prev,
+        yukluDosyalar: prev.yukluDosyalar.filter((f) => f.id !== id)
+      };
+    });
   };
 
   const updateDosya = (id, updates) => {
@@ -210,7 +229,7 @@ export default function SesliOyuncakSiparis() {
 
             {/* İçerik */}
             <div className="bg-gray-50 rounded-xl p-6">
-              {/* ✅ Hazır: dropdown + arama */}
+              {/* Hazır */}
               {activeTab === 'hazir' && (
                 <HazirMuzikPicker formData={formData} setFormData={setFormData} />
               )}
@@ -253,9 +272,7 @@ export default function SesliOyuncakSiparis() {
                   <input
                     type="url"
                     value={formData.youtubeLink}
-                    onChange={(e) =>
-                      setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' })
-                    }
+                    onChange={(e) => setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
                     placeholder="https://youtube.com/watch?v=..."
                   />
@@ -339,9 +356,7 @@ function HazirMuzikPicker({ formData, setFormData }) {
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-semibold text-gray-700">Seçilen: {selected.title}</div>
-            <div className="text-xs text-gray-500">
-              {selected.tags?.length ? selected.tags.join(' • ') : ''}
-            </div>
+            <div className="text-xs text-gray-500">{selected.tags?.length ? selected.tags.join(' • ') : ''}</div>
           </div>
 
           <div className="rounded-xl overflow-hidden">
@@ -363,10 +378,7 @@ function HazirMuzikPicker({ formData, setFormData }) {
 }
 
 /* =========================================================
-   ✅ DosyaTrimmer (Hassas + 2 yuvarlak tutamaç + kırpma fix)
-   - Normal: 0.05s
-   - SHIFT:  0.005s
-   - Wheel:  micro
+   ✅ DosyaTrimmer (multi-file takılma fix + kırpma)
    ========================================================= */
 function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -377,51 +389,54 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const STEP_NORMAL = 0.05;
   const STEP_FINE = 0.005;
 
+  // ✅ 1) Metadata'yı probe Audio ile al (2. dosyada takılma fix)
   useEffect(() => {
-  let cancelled = false;
+    let cancelled = false;
 
-  // zaten hazırsa tekrar uğraşma
-  if (dosya.isReady && dosya.duration > 0) return;
+    if (dosya.isReady && dosya.duration > 0) return;
 
-  const probe = new Audio();
-  probe.preload = 'metadata';
-  probe.src = dosya.url;
+    const probe = new Audio();
+    probe.preload = 'metadata';
+    probe.src = dosya.url;
 
-  const done = (dur) => {
-    if (cancelled) return;
-    if (!dur || isNaN(dur) || dur <= 0) return;
-
-    const firstInit = !dosya.duration || dosya.duration <= 0;
-
-    onUpdate(dosya.id, {
-      duration: dur,
-      isReady: true,
-      ...(firstInit ? { trimStart: 0, trimEnd: Math.min(310, dur) } : {})
-    });
-  };
-
-  probe.onloadedmetadata = () => done(probe.duration);
-
-  probe.onerror = () => {
-    // bazı tarayıcılarda 1. sefer kaçırabiliyor, mini retry
-    setTimeout(() => {
+    const done = (dur) => {
       if (cancelled) return;
-      const retry = new Audio();
-      retry.preload = 'metadata';
-      retry.src = dosya.url;
-      retry.onloadedmetadata = () => done(retry.duration);
-    }, 150);
-  };
+      if (!dur || isNaN(dur) || dur <= 0) return;
 
-  // zorla başlat
-  probe.load();
+      const firstInit = !dosya.duration || dosya.duration <= 0;
 
-  return () => {
-    cancelled = true;
-    probe.src = '';
-  };
-}, [dosya.id, dosya.url]);  // ✅ sadece url/id değişince çalışsın
+      onUpdate(dosya.id, {
+        duration: dur,
+        isReady: true,
+        ...(firstInit ? { trimStart: 0, trimEnd: Math.min(310, dur) } : {})
+      });
+    };
 
+    probe.onloadedmetadata = () => done(probe.duration);
+
+    probe.onerror = () => {
+      setTimeout(() => {
+        if (cancelled) return;
+        const retry = new Audio();
+        retry.preload = 'metadata';
+        retry.src = dosya.url;
+        retry.onloadedmetadata = () => done(retry.duration);
+        retry.load();
+      }, 150);
+    };
+
+    probe.load();
+
+    return () => {
+      cancelled = true;
+      probe.src = '';
+    };
+  }, [dosya.id, dosya.url]);
+
+  // ✅ 2) Trim sınır kontrolü (çalarken kırpsın)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
     const handleTimeUpdate = () => {
       if (!isPlaying) return;
@@ -445,29 +460,14 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       audio.currentTime = dosya.trimStart;
     };
 
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('canplay', handleLoadedMetadata);
-    audio.addEventListener('loadeddata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
 
-    audio.preload = 'auto';
-    if (audio.readyState === 0) audio.load();
-    else if (audio.duration) handleLoadedMetadata();
-
-    const timeout = setTimeout(() => {
-      if (audio.duration) handleLoadedMetadata();
-    }, 500);
-
     return () => {
-      clearTimeout(timeout);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('canplay', handleLoadedMetadata);
-      audio.removeEventListener('loadeddata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [dosya.id, dosya.trimStart, dosya.trimEnd, dosya.duration, isPlaying, onUpdate]);
+  }, [isPlaying, dosya.trimStart, dosya.trimEnd]);
 
   const formatTime = (seconds) => {
     if (seconds === null || seconds === undefined || isNaN(seconds)) return '0:00';
@@ -612,9 +612,10 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             onClick={togglePlay}
             disabled={!dosya.isReady}
             className={`p-2 rounded-full transition flex-shrink-0 ${
-              dosya.isReady ? 'bg-purple-100 hover:bg-purple-200 active:scale-95' : 'bg-gray-100 cursor-not-allowed opacity-50'
+              dosya.isReady
+                ? 'bg-purple-100 hover:bg-purple-200 active:scale-95'
+                : 'bg-gray-100 cursor-not-allowed opacity-50'
             }`}
-            title={dosya.isReady ? (isPlaying ? 'Durdur' : 'Oynat') : 'Dosya yükleniyor...'}
           >
             {isPlaying ? (
               <Pause className="w-4 h-4 text-purple-600" />
@@ -630,9 +631,10 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             ) : (
               <span className="text-xs text-green-600">✓ Hazır - Toplam: {formatTime(dosya.duration)}</span>
             )}
-         <div className="text-[11px] text-gray-500 mt-1">
-        İpucu: Hassas ayar için <b>SHIFT</b> + <b>mouse tekerleğini</b> kullanınız
-         </div>
+
+            <div className="text-[11px] text-gray-500 mt-1">
+              İpucu: Hassas ayar için <b>SHIFT</b> + <b>mouse tekerleğini</b> kullanınız
+            </div>
           </div>
         </div>
 
@@ -648,8 +650,12 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       {dosya.isReady && dosya.duration > 0 && (
         <div className="space-y-3 mt-4">
           <div className="flex justify-between text-xs text-gray-600">
-            <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
-            <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
+            <span>
+              Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong>
+            </span>
+            <span>
+              Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong>
+            </span>
             <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
               Süre: {formatTime(selectedDuration)}
             </span>
