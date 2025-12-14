@@ -1,365 +1,15 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Music, Upload, Globe, User, Phone, Check, Play, Pause, X, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Music, Upload, Globe, User, Check, Play, Pause, X, AlertCircle } from 'lucide-react';
 
 // Favicon ekle
 if (typeof document !== 'undefined') {
   const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
   link.type = 'image/svg+xml';
   link.rel = 'icon';
-  link.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">🎵</text></svg>';
+  link.href =
+    'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">🎵</text></svg>';
   document.getElementsByTagName('head')[0].appendChild(link);
 }
-
-// Zaman formatlama yardımcı fonksiyonu
-const formatTime = (seconds) => {
-  if (seconds === null || seconds === undefined || isNaN(seconds) || seconds < 0) return '0:00';
-  const totalSeconds = Math.floor(seconds);
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = totalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
-
-// Dosya Trimmer Component (GÜNCELLENDİ: Hata Yönetimi İyileştirildi)
-function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [playbackError, setPlaybackError] = useState(null); // Yeni: Oynatma hataları için
-  const audioRef = useRef(null);
-  const animationRef = useRef(null);
-  
-  // Süreyi ilk kez yüklerken ayarla
-  const initializeDuration = useCallback((audio) => {
-    const dur = audio.duration;
-    if (!dur || isNaN(dur) || dur <= 0) return;
-    
-    // Yalnızca ilk kez duration geliyorsa başlangıç değerlerini kur
-    if (!dosya.duration || dosya.duration <= 0) {
-       console.log(`[İlk Yükleme] ${dosya.name}: Toplam Süre: ${dur}s`);
-       onUpdate(dosya.id, {
-         duration: dur,
-         isReady: true,
-         trimStart: 0,
-         trimEnd: Math.min(310, dur), // Başlangıçta 310 saniye veya toplam süre
-       });
-    } else {
-       // Tekrar yükleme olayında sadece hazır olduğunu işaretle
-       onUpdate(dosya.id, { isReady: true });
-    }
-  }, [dosya.id, dosya.duration, dosya.name, onUpdate]);
-
-  // Ses dosyasının meta verilerini yükleme ve trim ayarlarını yapma
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleError = (e) => {
-      console.error(`Dosya yükleme hatası (${dosya.name}):`, e);
-      onUpdate(dosya.id, { isReady: true }); // Hata olsa bile kullanıcıya UI'ı göster
-    };
-    
-    // Gerekli event listener'ları tek bir handler'a bağlayıp çağır
-    const handleEvents = () => {
-        if (audio.duration) initializeDuration(audio);
-    };
-
-    // Event listener'ları ekle
-    audio.addEventListener('loadedmetadata', handleEvents);
-    audio.addEventListener('canplaythrough', handleEvents);
-    audio.addEventListener('error', handleError);
-    
-    // Hemen yüklemeye çalış
-    if (audio.readyState >= 2 && audio.duration) { 
-      initializeDuration(audio);
-    } else {
-      audio.load();
-    }
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleEvents);
-      audio.removeEventListener('canplaythrough', handleEvents);
-      audio.removeEventListener('error', handleError);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [dosya.id, dosya.name, onUpdate, initializeDuration]);
-
-  // Çalma ve trim kontrolü döngüsü
-  useEffect(() => {
-    const updateTime = () => {
-      const audio = audioRef.current;
-      if (audio && isPlaying) {
-        const time = audio.currentTime;
-        setCurrentTime(time);
-
-        // Bitiş noktasına ulaşıldıysa durdur (TRIM MANTIĞI BURADA)
-        if (time >= dosya.trimEnd) {
-          audio.pause();
-          audio.currentTime = dosya.trimStart; // Başa dön
-          setIsPlaying(false);
-        } else {
-          animationRef.current = requestAnimationFrame(updateTime);
-        }
-      }
-    };
-
-    if (isPlaying) {
-      // Çalma döngüsünü başlat
-      animationRef.current = requestAnimationFrame(updateTime);
-    }
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, dosya.trimEnd, dosya.trimStart]);
-
-  // Toggle Play (Oynatma Hata Yönetimi GÜNCELLENDİ)
-  const togglePlay = async () => {
-    const audio = audioRef.current;
-    if (!audio || !dosya.isReady) return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      setPlaybackError(null); // Hata varsa durdurulduğunda temizle
-    } else {
-      try {
-        audio.volume = 0.7;
-        // Çalmaya başlamadan önce başlangıç noktasına ayarla
-        audio.currentTime = dosya.trimStart;
-        setPlaybackError(null); // Oynatma denemesi öncesi hatayı temizle
-
-        const playPromise = audio.play();
-
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => setIsPlaying(true))
-            .catch(err => {
-              console.error('Oynatma hatası:', err.name, err.message);
-              setIsPlaying(false);
-              
-              let errorMessage = 'Bilinmeyen bir oynatma hatası oluştu.';
-              
-              // Tarayıcı kısıtlaması hatası (Autoplay engeli)
-              if (err.name === 'NotAllowedError') {
-                  errorMessage = '🔊 Tarayıcı Otomatik Oynatmayı engelledi. Lütfen tekrar Oynat butonuna tıklayın.';
-              } else if (err.name === 'NotSupportedError') {
-                  errorMessage = '❌ Bu ses dosyası formatı desteklenmiyor. Lütfen MP3 deneyin.';
-              }
-
-              setPlaybackError(errorMessage);
-            });
-        }
-      } catch (err) {
-        console.error('Beklenmeyen oynatma hatası:', err);
-        setIsPlaying(false);
-        setPlaybackError('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
-      }
-    }
-  };
-
-  // Başlangıç kaydırıcısı
-  const handleStartChange = (e) => {
-    const newStart = parseFloat(e.target.value);
-    // Başlangıç, bitişten en az 0.1 saniye küçük olmalı (kaydırıcıların takılmasını engeller)
-    const clampedStart = Math.min(newStart, dosya.trimEnd - 0.1); 
-    onUpdate(dosya.id, { trimStart: clampedStart });
-  };
-
-  // Bitiş kaydırıcısı
-  const handleEndChange = (e) => {
-    const newEnd = parseFloat(e.target.value);
-    // Bitiş, başlangıçtan en az 0.1 saniye büyük olmalı (kaydırıcıların takılmasını engeller)
-    const clampedEnd = Math.max(newEnd, dosya.trimStart + 0.1);
-    onUpdate(dosya.id, { trimEnd: clampedEnd });
-  };
-
-  const selectedDuration = Math.max(0, dosya.trimEnd - dosya.trimStart);
-  
-  // Sliderların max ve min değerlerini belirlerken 0.1 saniye kayma payı bırakıyoruz.
-  const maxStart = dosya.trimEnd - 0.1;
-  const minEnd = dosya.trimStart + 0.1;
-  
-  // Oynatma ilerleme çubuğunun genişliğini hesapla
-  const progressWidth = dosya.isReady && selectedDuration > 0
-    ? ((currentTime - dosya.trimStart) / selectedDuration) * 100
-    : 0;
-  
-  // Oynatma ilerleme çubuğunun başlangıç pozisyonunu hesapla (offset)
-  const progressOffset = dosya.isReady
-    ? (dosya.trimStart / dosya.duration) * 100
-    : 0;
-
-
-  return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
-      <audio ref={audioRef} src={dosya.url} preload="auto" />
-
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <button
-            type="button"
-            onClick={togglePlay}
-            disabled={!dosya.isReady || dosya.duration === 0}
-            className={`p-2 rounded-full transition flex-shrink-0 ${
-              (dosya.isReady && dosya.duration > 0)
-                 ? 'bg-purple-100 hover:bg-purple-200 active:scale-95'
-                 : 'bg-gray-100 cursor-not-allowed opacity-50'
-            }`}
-            title={dosya.isReady ? (isPlaying ? 'Durdur' : 'Oynat') : 'Dosya yükleniyor...'}
-          >
-            {isPlaying ? (
-              <Pause className="w-4 h-4 text-purple-600" />
-            ) : (
-              <Play className="w-4 h-4 text-purple-600" />
-            )}
-          </button>
-          <div className="flex-1 min-w-0">
-            <span className="text-sm text-gray-700 truncate block">{dosya.name}</span>
-            {!dosya.isReady ? (
-              <span className="text-xs text-amber-600 animate-pulse">⏳ Dosya hazırlanıyor... (Lütfen bekleyin)</span>
-            ) : (
-              <span className="text-xs text-green-600">
-                ✓ Hazır - Toplam: {formatTime(dosya.duration)} - Şu an: {formatTime(currentTime)}
-              </span>
-            )}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => onRemove(dosya.id)}
-          className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0"
-        >
-          <X className="w-4 h-4 text-red-600" />
-        </button>
-      </div>
-
-      {/* Oynatma Hata Mesajı (Playback) - Artık alert kullanmıyoruz */}
-      {playbackError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2 mb-4">
-            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-            <p className="text-xs text-red-600">{playbackError}</p>
-          </div>
-      )}
-
-
-      {dosya.isReady && dosya.duration > 0 && (
-        <div className="space-y-4 mt-4">
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
-            <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
-            <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
-              Seçili Süre: {formatTime(selectedDuration)}
-            </span>
-          </div>
-          
-           {/* Progress Bar (Oynatılan Alanı göstermek için GÜNCELLENDİ) */}
-          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-             {/* Seçilen aralığı gösteren mor arka plan (TRIM alanı) */}
-            <div 
-                className="absolute h-full bg-purple-200 rounded-full"
-                style={{ 
-                    width: `${(selectedDuration / dosya.duration) * 100}%`,
-                    left: `${progressOffset}%`
-                }}
-            />
-            
-            {/* Oynatma İlerlemesi (Yalnızca seçilen aralık içinde hareket eder) */}
-            {isPlaying && (
-              <div 
-                className="absolute h-full bg-purple-600 transition-all duration-100 ease-linear rounded-full"
-                style={{ 
-                  width: `${Math.min(100, progressWidth)}%`,
-                  left: `${progressOffset}%`, 
-                  // Trim alanının dışına çıkmasını engelle
-                  maxWidth: `${(selectedDuration / dosya.duration) * 100}%` 
-                }}
-              />
-            )}
-            
-            {/* Başlangıç ve Bitiş konumlarını gösteren işaretçiler */}
-             <div 
-                className="absolute top-0 bottom-0 w-1 bg-purple-700 rounded-full"
-                style={{ left: `${progressOffset}%` }}
-                title="Trim Başlangıcı"
-            />
-             <div 
-                className="absolute top-0 bottom-0 w-1 bg-purple-700 rounded-full"
-                style={{ left: `${(dosya.trimEnd / dosya.duration) * 100}%`, marginLeft: '-1px' }}
-                title="Trim Bitişi"
-            />
-            
-          </div>
-
-          {/* Başlangıç Noktası Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs font-semibold text-gray-700">Başlangıç Noktası</label>
-              <span className="text-xs text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">{formatTime(dosya.trimStart)}</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              // Max değeri, bitiş noktasından 0.1 saniye önce
-              max={maxStart} 
-              step="0.1"
-              value={dosya.trimStart}
-              onChange={handleStartChange}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
-              style={{
-                // Slider'ın solundaki rengi Başlangıç değerine göre ayarla
-                background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${
-                    (dosya.trimStart / dosya.duration) * 100
-                }%, #e5e7eb ${
-                    (dosya.trimStart / dosya.duration) * 100
-                }%, #e5e7eb 100%)`
-              }}
-            />
-          </div>
-
-          {/* Bitiş Noktası Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs font-semibold text-gray-700">Bitiş Noktası</label>
-              <span className="text-xs text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">{formatTime(dosya.trimEnd)}</span>
-            </div>
-            <input
-              type="range"
-              // Min değeri, başlangıç noktasından 0.1 saniye sonra
-              min={minEnd} 
-              max={dosya.duration}
-              step="0.1"
-              value={dosya.trimEnd}
-              onChange={handleEndChange}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
-              style={{
-                // Slider'ın solundaki rengi Bitiş değerine göre ayarla (Renk eşitleme önceki adımdan korundu)
-                background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${
-                    (dosya.trimEnd / dosya.duration) * 100
-                }%, #e5e7eb ${
-                    (dosya.trimEnd / dosya.duration) * 100
-                }%, #e5e7eb 100%)`
-              }}
-            />
-            <p className="text-xs text-gray-500 mt-1 italic">
-              ℹ️ İstediğiniz bitiş noktasını seçin (Max: {formatTime(dosya.duration)})
-            </p>
-          </div>
-
-          {/* Hata Mesajı (Süre Sınırı) */}
-          {selectedDuration > 310 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-              <p className="text-xs text-red-600">Seçili süre 310 saniyeden fazla ({formatTime(selectedDuration)})! Lütfen kısaltın.</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
@@ -372,248 +22,195 @@ export default function SesliOyuncakSiparis() {
     youtubeLink: ''
   });
 
-  // Hazır müzik listesi - YOUTUBE'A ÇEVRİLDİ
+  // Hazır müzik listesi - YouTube
   const [hazirMuzikler] = useState([
-    {
-       id: 1,
-       isim: 'Dandini Dandini Dastana',
-       type: 'youtube',
-       youtubeId: '_zsQXwIOILo'
-    },
-    {
-       id: 2,
-       isim: 'Twinkle Twinkle Little Star',
-       type: 'youtube',
-       youtubeId: 'yCjJyiqpAuU'
-    },
-    {
-       id: 3,
-       isim: 'Uyu Yavrum Uyu',
-       type: 'youtube',
-       youtubeId: 'kVFjaOyAK-s'
-    }
+    { id: 1, isim: 'Dandini Dandini Dastana', type: 'youtube', youtubeId: '_zsQXwIOILo' },
+    { id: 2, isim: 'Twinkle Twinkle Little Star', type: 'youtube', youtubeId: 'yCjJyiqpAuU' },
+    { id: 3, isim: 'Uyu Yavrum Uyu', type: 'youtube', youtubeId: 'kVFjaOyAK-s' }
   ]);
-  
+
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.onended = () => {};
+    }
+  }, []);
 
   const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newFiles = files.map(file => ({
+    const files = Array.from(e.target.files || []);
+    const newFiles = files.map((file) => ({
       id: Date.now() + Math.random(),
-      file: file,
+      file,
       url: URL.createObjectURL(file),
       name: file.name,
       duration: 0,
       trimStart: 0,
-      // Başlangıçta min. değerler, DosyaTrimmer'da güncellenecek
-      trimEnd: 310, 
+      trimEnd: 0,
       isReady: false
     }));
 
-    setFormData({ 
-       ...formData, 
-       yukluDosyalar: [...formData.yukluDosyalar, ...newFiles],
-       muzikSecimi: 'yukle'
+    setFormData({
+      ...formData,
+      yukluDosyalar: [...formData.yukluDosyalar, ...newFiles],
+      muzikSecimi: 'yukle'
     });
   };
 
   const removeDosya = (id) => {
     setFormData({
       ...formData,
-      yukluDosyalar: formData.yukluDosyalar.filter(f => f.id !== id)
+      yukluDosyalar: formData.yukluDosyalar.filter((f) => f.id !== id)
     });
   };
 
   const updateDosya = (id, updates) => {
-    setFormData(prevData => ({
-      ...prevData,
-      yukluDosyalar: prevData.yukluDosyalar.map(f => 
-         f.id === id ? { ...f, ...updates } : f
-      )
-    }));
+    setFormData({
+      ...formData,
+      yukluDosyalar: formData.yukluDosyalar.map((f) => (f.id === id ? { ...f, ...updates } : f))
+    });
   };
 
   const handleSubmit = () => {
     if (!formData.musteriAdi || !formData.telefon) {
-      // alert() yerine UI modal/message kullanılması gerekir, burada sadece console.log yapalım
-      console.error('Lütfen ad ve telefon bilgilerini doldurun!');
+      alert('Lütfen ad ve telefon bilgilerini doldurun!');
       return;
     }
-    
-    let isMuzikSecili = false;
-    let muzikDetay;
-    
-    switch(activeTab) {
-        case 'hazir':
-            if (formData.hazirMuzik) {
-                isMuzikSecili = true;
-                muzikDetay = { type: 'Hazır Müzik', isim: formData.hazirMuzik };
-            }
-            break;
-        case 'yukle':
-            if (formData.yukluDosyalar.length > 0) {
-                // Seçili dosyalardan süresi 310 saniyeyi geçen var mı kontrol et
-                const hasLongFile = formData.yukluDosyalar.some(f => (f.trimEnd - f.trimStart) > 310);
-                if (hasLongFile) {
-                     // alert() yerine console.log yapalım
-                     console.error('Lütfen yüklediğiniz dosyalardan birinin süresini 310 saniye veya altına kısaltın!');
-                     return;
-                }
-                isMuzikSecili = true;
-                muzikDetay = { 
-                    type: 'Yüklenen Dosyalar', 
-                    dosyalar: formData.yukluDosyalar.map(f => ({
-                        isim: f.name,
-                        trimStart: f.trimStart,
-                        trimEnd: f.trimEnd
-                    }))
-                };
-            }
-            break;
-        case 'internet':
-            if (formData.youtubeLink) {
-                isMuzikSecili = true;
-                muzikDetay = { type: 'YouTube Link', link: formData.youtubeLink };
-            }
-            break;
-        default:
-            break;
+
+    if (activeTab === 'hazir' && !formData.hazirMuzik) {
+      alert('Lütfen bir müzik seçin!');
+      return;
     }
-    
-    if (!isMuzikSecili) {
-        // alert() yerine console.log yapalım
-        console.error('Lütfen bir müzik seçimi yapın!');
-        return;
+    if (activeTab === 'yukle' && formData.yukluDosyalar.length === 0) {
+      alert('Lütfen en az bir dosya yükleyin!');
+      return;
+    }
+    if (activeTab === 'internet' && !formData.youtubeLink) {
+      alert('Lütfen bir YouTube linki girin!');
+      return;
     }
 
-    // Başarılı mesajı yerine console log
-    console.log('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
-    console.log('--- Sipariş Özeti ---');
-    console.log('Müşteri:', formData.musteriAdi);
-    console.log('Telefon:', formData.telefon);
-    console.log('Müzik Seçim Türü:', activeTab);
-    console.log('Müzik Detayları:', muzikDetay);
-    console.log('---------------------');
+    alert('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
+    console.log('Sipariş Detayları:', formData);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 font-sans antialiased">
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        
+        <audio ref={audioRef} />
+
         {/* Header */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 mb-6 text-center border-t-4 border-purple-500">
+        <div className="bg-white rounded-3xl shadow-xl p-8 mb-6 text-center">
           <div className="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center">
             <Music className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Sesli Oyuncak Siparişi</h1>
           <p className="text-gray-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun</p>
         </div>
-        
-        <div className="bg-white rounded-3xl shadow-2xl p-8">
-          
+
+        <div className="bg-white rounded-3xl shadow-xl p-8">
           {/* Müşteri Bilgileri */}
-          <div className="mb-8 border-b pb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
               <User className="w-5 h-5 mr-2 text-purple-500" />
-              1. İletişim Bilgileri
+              İletişim Bilgileri
             </h2>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ad Soyad *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ad Soyad *</label>
                 <input
                   type="text"
                   value={formData.musteriAdi}
                   onChange={(e) => setFormData({ ...formData, musteriAdi: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition"
-                  placeholder="Adınızı ve soyadınızı girin"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                  placeholder="Adınızı girin"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefon *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Telefon *</label>
                 <input
                   type="tel"
                   value={formData.telefon}
                   onChange={(e) => setFormData({ ...formData, telefon: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition"
-                  placeholder="05XX XXX XX XX"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                  placeholder="0555 555 55 55"
                 />
               </div>
             </div>
           </div>
-          
+
           {/* Müzik Seçimi */}
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center mb-4">
               <Music className="w-5 h-5 mr-2 text-purple-500" />
-              2. Müzik Seçimi
+              Müzik Seçimi *
             </h2>
-            
-            {/* Uyarı Mesajı */}
-            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+
+            {/* Uyarı */}
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-amber-800">
-                <strong>Önemli:</strong> Müzik süresi maksimum 310 saniye (5 dakika 10 saniye) olmalıdır. Yüklediğiniz dosyalarda, süreyi aşağıdaki kaydırıcılarla ayarlayabilirsiniz.
+                <strong>Önemli:</strong> Müzik süresi maksimum 310 saniye olmalıdır. (5dk 10sn)
               </div>
             </div>
-            
-            {/* Tab Buttons */}
-            <div className="flex gap-2 mb-6 flex-wrap bg-gray-100 p-2 rounded-xl">
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 flex-wrap">
               <button
                 type="button"
                 onClick={() => setActiveTab('hazir')}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'hazir'
-                    ? 'bg-white text-purple-600 shadow-md'
-                    : 'text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Music className="w-4 h-4" />
                 Hazır Müzik
               </button>
+
               <button
                 type="button"
                 onClick={() => setActiveTab('yukle')}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'yukle'
-                    ? 'bg-white text-purple-600 shadow-md'
-                    : 'text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Upload className="w-4 h-4" />
                 Dosya Yükle
               </button>
+
               <button
                 type="button"
                 onClick={() => setActiveTab('internet')}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
+                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'internet'
-                    ? 'bg-white text-purple-600 shadow-md'
-                    : 'text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Globe className="w-4 h-4" />
                 İnternetten
               </button>
             </div>
-            
-            {/* Tab Content */}
-            <div className="rounded-xl p-4 border border-gray-200">
-              
-              {/* Hazır Müzik (YouTube Embed) */}
+
+            {/* İçerik */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              {/* Hazır */}
               {activeTab === 'hazir' && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-4">Aşağıdaki listeden bir müzik seçin ve önizlemesini izleyin:</p>
+                  <p className="text-sm text-gray-600 mb-4">Listeden seç ve dinle:</p>
                   <div className="space-y-3">
                     {hazirMuzikler.map((muzik) => (
-                      <div key={muzik.id} className="border-b border-gray-100 last:border-b-0 pb-3">
+                      <div key={muzik.id}>
                         <label
-                          className={`flex items-center p-3 border-2 rounded-xl cursor-pointer transition ${
+                          className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition ${
                             formData.hazirMuzik === muzik.isim
-                              ? 'border-purple-500 bg-purple-50 shadow-sm'
+                              ? 'border-purple-500 bg-purple-50'
                               : 'border-gray-200 hover:border-purple-300'
                           }`}
                         >
@@ -625,18 +222,14 @@ export default function SesliOyuncakSiparis() {
                             onChange={(e) => {
                               setFormData({ ...formData, hazirMuzik: e.target.value, muzikSecimi: 'hazir' });
                             }}
-                            className="w-4 h-4 text-purple-500 focus:ring-purple-500"
+                            className="w-4 h-4 text-purple-500"
                           />
-                          <span className="ml-3 text-gray-700 flex-1 font-medium">{muzik.isim}</span>
-                          
-                          {formData.hazirMuzik === muzik.isim && (
-                            <Check className="w-5 h-5 ml-2 text-purple-500" />
-                          )}
+                          <span className="ml-3 text-gray-700 flex-1">{muzik.isim}</span>
+                          {formData.hazirMuzik === muzik.isim && <Check className="w-5 h-5 ml-2 text-purple-500" />}
                         </label>
-                        
-                        {/* YouTube Preview */}
+
                         {muzik.type === 'youtube' && formData.hazirMuzik === muzik.isim && (
-                          <div className="mt-3 rounded-lg overflow-hidden border border-gray-300">
+                          <div className="mt-3 rounded-xl overflow-hidden">
                             <iframe
                               width="100%"
                               height="200"
@@ -645,6 +238,7 @@ export default function SesliOyuncakSiparis() {
                               frameBorder="0"
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                               allowFullScreen
+                              className="rounded-xl"
                             />
                           </div>
                         )}
@@ -654,85 +248,298 @@ export default function SesliOyuncakSiparis() {
                 </div>
               )}
 
-              {/* Dosya Yükleme (Trimmer dahil) */}
+              {/* Yükle */}
               {activeTab === 'yukle' && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Müzik dosyalarınızı yükleyin (MP3, WAV formatları). Ses uzunluğunu aşağıdan ayarlayabilirsiniz.
-                  </p>
-                  
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition mb-4 bg-gray-50">
-                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+                  <p className="text-sm text-gray-600 mb-4">Dosya yükle (MP3 / WAV)</p>
+
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition mb-4">
+                    <Upload className="w-12 h-12 mx-auto text-gray-400 mb-3" />
                     <label className="cursor-pointer">
-                      <span className="text-purple-600 font-bold hover:text-purple-700 underline underline-offset-2">
+                      <span className="text-purple-600 font-medium hover:text-purple-700">
                         Dosya Seç (Birden fazla seçilebilir)
                       </span>
-                      <input
-                        type="file"
-                        accept="audio/*"
-                        multiple
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
+                      <input type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden" />
                     </label>
                   </div>
-                  
-                  {/* Yüklenen Dosyalar Listesi */}
+
                   {formData.yukluDosyalar.length > 0 && (
-                    <div className="space-y-4 pt-4">
-                      <p className="text-sm font-medium text-gray-700">Yüklenen Dosyalar ve Kırpma Ayarları:</p>
+                    <div className="space-y-4">
+                      <p className="text-sm font-medium text-gray-700">Yüklenen Dosyalar:</p>
                       {formData.yukluDosyalar.map((dosya) => (
-                        <DosyaTrimmer
-                          key={dosya.id}
-                          dosya={dosya}
-                          onRemove={removeDosya}
-                          onUpdate={updateDosya}
-                        />
+                        <DosyaTrimmer key={dosya.id} dosya={dosya} onRemove={removeDosya} onUpdate={updateDosya} />
                       ))}
                     </div>
                   )}
                 </div>
               )}
-              
-              {/* İnternetten Müzik */}
+
+              {/* İnternet */}
               {activeTab === 'internet' && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    YouTube'dan bir müzik linki paylaşın:
-                  </p>
+                  <p className="text-sm text-gray-600 mb-4">YouTube linki gir:</p>
                   <input
                     type="url"
                     value={formData.youtubeLink}
-                    onChange={(e) => {
-                      setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' });
-                    }}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition"
+                    onChange={(e) => setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
                     placeholder="https://youtube.com/watch?v=..."
                   />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Örnek: https://youtube.com/watch?v=dQw4w9WgXcQ
-                  </p>
-                  <p className="text-xs text-amber-700 mt-2 p-2 bg-amber-100 rounded">
-                    ⚠️  Linkteki müziğin 310 saniyelik en uygun bölümü tarafımızdan seçilecektir.
-                  </p>
+                  <p className="text-xs text-amber-600 mt-2">Not: 310 saniyelik bölümü biz seçeriz.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-pink-600 hover:to-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-pink-600 hover:to-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             Siparişi Tamamla
           </button>
-          <p className="text-xs text-gray-500 text-center mt-4">
-            Siparişiniz alındıktan sonra belirtilen telefon numarasından sizinle iletişime geçeceğiz.
-          </p>
+
+          <p className="text-xs text-gray-500 text-center mt-4">Siparişiniz alındıktan sonra sizinle iletişime geçeceğiz</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ===========================
+   TEK BAR + BAŞLANGIÇ/BİTİŞ
+   + SES KIRPMA FIX (timeupdate)
+   =========================== */
+function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+
+  const MIN_GAP = 0.1;
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleLoadedMetadata = () => {
+      const dur = audio.duration;
+      if (!dur || isNaN(dur) || dur <= 0) return;
+
+      const firstInit = !dosya.duration || dosya.duration <= 0;
+
+      onUpdate(dosya.id, {
+        duration: dur,
+        isReady: true,
+        ...(firstInit ? { trimStart: 0, trimEnd: Math.min(310, dur) } : {})
+      });
+    };
+
+    const handleTimeUpdate = () => {
+      if (!isPlaying) return;
+
+      const t = audio.currentTime;
+
+      // start altına düştüyse düzelt
+      if (t < dosya.trimStart) {
+        audio.currentTime = dosya.trimStart;
+        return;
+      }
+
+      // end geçtiyse durdur
+      if (t >= dosya.trimEnd) {
+        audio.pause();
+        audio.currentTime = dosya.trimStart;
+        setIsPlaying(false);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      audio.currentTime = dosya.trimStart;
+    };
+
+    const handleError = (e) => console.error('Dosya yükleme hatası:', e);
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleLoadedMetadata);
+    audio.addEventListener('loadeddata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    audio.preload = 'auto';
+    if (audio.readyState === 0) audio.load();
+    else if (audio.duration) handleLoadedMetadata();
+
+    const timeout = setTimeout(() => {
+      if (audio.duration) handleLoadedMetadata();
+    }, 500);
+
+    return () => {
+      clearTimeout(timeout);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleLoadedMetadata);
+      audio.removeEventListener('loadeddata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [dosya.id, dosya.trimStart, dosya.trimEnd, dosya.duration, isPlaying, onUpdate]);
+
+  const formatTime = (seconds) => {
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const togglePlay = async () => {
+    const audio = audioRef.current;
+    if (!audio || !dosya.isReady) return;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      audio.volume = 0.6;
+      audio.currentTime = dosya.trimStart; // ✅ her play’de başlangıca git
+      await audio.play();
+      setIsPlaying(true);
+    } catch (err) {
+      console.error('Oynatma hatası:', err);
+      setIsPlaying(false);
+      alert('Ses çalınamadı. Tarayıcı engeli olabilir, tekrar play’e bas.');
+    }
+  };
+
+  const handleStartChange = (e) => {
+    const newStart = parseFloat(e.target.value);
+    const clamped = Math.min(newStart, dosya.trimEnd - MIN_GAP);
+
+    // oynuyorsa start değişince ses de oraya gitsin
+    const audio = audioRef.current;
+    if (audio && isPlaying) audio.currentTime = clamped;
+
+    onUpdate(dosya.id, { trimStart: clamped });
+  };
+
+  const handleEndChange = (e) => {
+    const newEnd = parseFloat(e.target.value);
+    const clamped = Math.max(newEnd, dosya.trimStart + MIN_GAP);
+
+    // oynuyorsa ve end currentTime’ın altına çekildiyse durdur
+    const audio = audioRef.current;
+    if (audio && isPlaying && audio.currentTime >= clamped) {
+      audio.pause();
+      audio.currentTime = dosya.trimStart;
+      setIsPlaying(false);
+    }
+
+    onUpdate(dosya.id, { trimEnd: clamped });
+  };
+
+  const selectedDuration = dosya.trimEnd - dosya.trimStart;
+
+  const startPct = dosya.duration ? (dosya.trimStart / dosya.duration) * 100 : 0;
+  const endPct = dosya.duration ? (dosya.trimEnd / dosya.duration) * 100 : 0;
+
+  return (
+    <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
+      <audio ref={audioRef} src={dosya.url} preload="auto" />
+
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={togglePlay}
+            disabled={!dosya.isReady}
+            className={`p-2 rounded-full transition flex-shrink-0 ${
+              dosya.isReady ? 'bg-purple-100 hover:bg-purple-200 active:scale-95' : 'bg-gray-100 cursor-not-allowed opacity-50'
+            }`}
+            title={dosya.isReady ? (isPlaying ? 'Durdur' : 'Oynat') : 'Dosya yükleniyor...'}
+          >
+            {isPlaying ? <Pause className="w-4 h-4 text-purple-600" /> : <Play className="w-4 h-4 text-purple-600" />}
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <span className="text-sm text-gray-700 truncate block">{dosya.name}</span>
+            {!dosya.isReady ? (
+              <span className="text-xs text-amber-600 animate-pulse">⏳ Dosya hazırlanıyor...</span>
+            ) : (
+              <span className="text-xs text-green-600">✓ Hazır - Toplam: {formatTime(dosya.duration)}</span>
+            )}
+          </div>
+        </div>
+
+        <button type="button" onClick={() => onRemove(dosya.id)} className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0">
+          <X className="w-4 h-4 text-red-600" />
+        </button>
+      </div>
+
+      {dosya.isReady && dosya.duration > 0 && (
+        <div className="space-y-3 mt-4">
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
+            <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
+            <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
+              Süre: {formatTime(selectedDuration)}
+            </span>
+          </div>
+
+          {/* ✅ Tek bar görünümü */}
+          <div className="relative pt-2">
+            <div
+              className="h-2 rounded-lg bg-gray-200"
+              style={{
+                background: `linear-gradient(to right,
+                  #e5e7eb 0%,
+                  #e5e7eb ${startPct}%,
+                  #a855f7 ${startPct}%,
+                  #a855f7 ${endPct}%,
+                  #e5e7eb ${endPct}%,
+                  #e5e7eb 100%)`
+              }}
+            />
+
+            {/* Start thumb (şeffaf slider) */}
+            <input
+              type="range"
+              min="0"
+              max={Math.max(0, dosya.duration - MIN_GAP)}
+              step="0.1"
+              value={dosya.trimStart}
+              onChange={handleStartChange}
+              className="absolute left-0 top-0 w-full h-6 opacity-0 cursor-pointer"
+            />
+
+            {/* End thumb (şeffaf slider) */}
+            <input
+              type="range"
+              min={MIN_GAP}
+              max={dosya.duration}
+              step="0.1"
+              value={dosya.trimEnd}
+              onChange={handleEndChange}
+              className="absolute left-0 top-0 w-full h-6 opacity-0 cursor-pointer"
+            />
+
+            <div className="flex justify-between text-xs text-gray-400 mt-2">
+              <span>0:00</span>
+              <span>{formatTime(dosya.duration)}</span>
+            </div>
+          </div>
+
+          {selectedDuration > 310 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <p className="text-xs text-red-600">Seçili süre 310 saniyeden fazla! Lütfen kısaltın.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
