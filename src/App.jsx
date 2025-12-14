@@ -402,35 +402,46 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       }
     };
 
-    const handleCanPlay = () => {
-      if (!dosya.isReady && audio.duration) {
+    const handleCanPlayThrough = () => {
+      // Dosya tamamen yüklendiğinde
+      if (audio.duration && !dosya.isReady) {
         handleLoadedMetadata();
       }
     };
 
     const handleError = (e) => {
       console.error('Dosya yükleme hatası:', e);
-      onUpdate(dosya.id, { isReady: false });
     };
 
+    // Tüm event listener'ları ekle
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('canplay', handleLoadedMetadata);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
     audio.addEventListener('loadeddata', handleLoadedMetadata);
     audio.addEventListener('error', handleError);
     
     // Preload'u güçlendir
     audio.preload = 'auto';
-    audio.load();
     
+    // Hemen yükle
+    if (audio.readyState === 0) {
+      audio.load();
+    } else if (audio.duration) {
+      // Zaten yüklüyse direkt işaretle
+      handleLoadedMetadata();
+    }
+    
+    // Fallback - 500ms sonra kontrol et
     const timeout = setTimeout(() => {
-      if (!dosya.isReady && audio.duration) {
+      if (audio.duration && !dosya.isReady) {
         handleLoadedMetadata();
       }
-    }, 2000);
+    }, 500);
     
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('canplay', handleLoadedMetadata);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
       audio.removeEventListener('loadeddata', handleLoadedMetadata);
       audio.removeEventListener('error', handleError);
       clearTimeout(timeout);
@@ -476,18 +487,13 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       setIsPlaying(false);
     } else {
       try {
-        // Dosyanın tamamen yüklendiğinden emin ol
-        if (audio.readyState < 2) {
-          alert('⏳ Dosya henüz yükleniyor. Lütfen biraz bekleyin ve tekrar deneyin.');
-          return;
-        }
-
-        // Önce ses seviyesini ayarla
+        // Ses seviyesini ayarla
         audio.volume = 0.5;
-        audio.currentTime = dosya.trimStart;
         
-        // Kısa bir gecikme ekle (load interrupt sorununu önlemek için)
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // currentTime'ı ayarla
+        if (audio.duration && !isNaN(audio.duration)) {
+          audio.currentTime = dosya.trimStart;
+        }
         
         // Play promise'i düzgün handle et
         const playPromise = audio.play();
@@ -505,11 +511,14 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               if (err.name === 'NotAllowedError') {
                 alert('🔊 Tarayıcı ses çalmayı engelledi. Lütfen tekrar play butonuna basın.');
               } else if (err.name === 'NotSupportedError') {
-                alert('❌ Bu ses dosyası formatı desteklenmiyor.');
+                alert('❌ Bu ses dosyası formatı desteklenmiyor. MP3 formatı deneyin.');
               } else if (err.message.includes('interrupted')) {
-                alert('⏸️ Dosya henüz hazır değil. Lütfen 2-3 saniye bekleyin ve tekrar deneyin.');
+                // Sessizce tekrar dene
+                setTimeout(() => {
+                  audio.play().then(() => setIsPlaying(true)).catch(() => {});
+                }, 200);
               } else {
-                alert('⚠️ Ses çalınamadı. Lütfen sayfayı yenileyin ve tekrar deneyin.');
+                console.warn('Play hatası (göz ardı edildi):', err.message);
               }
             });
         }
