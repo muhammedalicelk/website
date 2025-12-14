@@ -539,15 +539,33 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const handleStartChange = (e) => {
     const newStart = parseFloat(e.target.value);
     const maxEnd = Math.min(newStart + 310, dosya.duration);
-    onUpdate(dosya.id, { 
-      trimStart: newStart,
-      trimEnd: maxEnd
-    });
+    
+    // Eğer yeni başlangıç, mevcut bitişten büyükse, bitişi de ayarla
+    if (newStart >= dosya.trimEnd) {
+      onUpdate(dosya.id, { 
+        trimStart: newStart,
+        trimEnd: maxEnd
+      });
+    } else {
+      // Sadece başlangıcı güncelle, bitiş aynı kalsın (310 sınırı içinde)
+      const newEnd = Math.min(dosya.trimEnd, newStart + 310);
+      onUpdate(dosya.id, { 
+        trimStart: newStart,
+        trimEnd: newEnd
+      });
+    }
   };
 
   const handleEndChange = (e) => {
     const newEnd = parseFloat(e.target.value);
-    onUpdate(dosya.id, { trimEnd: newEnd });
+    const maxAllowedEnd = Math.min(dosya.trimStart + 310, dosya.duration);
+    
+    // 310 saniye sınırını kontrol et
+    if (newEnd > maxAllowedEnd) {
+      onUpdate(dosya.id, { trimEnd: maxAllowedEnd });
+    } else {
+      onUpdate(dosya.id, { trimEnd: newEnd });
+    }
   };
 
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
@@ -617,6 +635,10 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               onChange={handleStartChange}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
             />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>0:00</span>
+              <span>{formatTime(dosya.duration)}</span>
+            </div>
           </div>
 
           <div>
@@ -626,13 +648,17 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             </div>
             <input
               type="range"
-              min={dosya.trimStart}
-              max={Math.min(dosya.trimStart + 310, dosya.duration)}
+              min={dosya.trimStart + 0.1}
+              max={dosya.duration}
               step="0.1"
               value={dosya.trimEnd}
               onChange={handleEndChange}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
             />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>Min: {formatTime(dosya.trimStart)}</span>
+              <span>Max: {formatTime(dosya.duration)}</span>
+            </div>
           </div>
 
           {/* Progress Bar */}
