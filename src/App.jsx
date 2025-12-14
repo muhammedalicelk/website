@@ -307,12 +307,9 @@ export default function SesliOyuncakSiparis() {
   );
 }
 
-/* ===========================
-   TEK BAR + BAŞLANGIÇ/BİTİŞ
-   + SES KIRPMA FIX (timeupdate)
-   =========================== */
 function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [activeThumb, setActiveThumb] = useState(null); // "start" | "end" | null
   const audioRef = useRef(null);
 
   const MIN_GAP = 0.1;
@@ -336,16 +333,12 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
     const handleTimeUpdate = () => {
       if (!isPlaying) return;
-
       const t = audio.currentTime;
 
-      // start altına düştüyse düzelt
       if (t < dosya.trimStart) {
         audio.currentTime = dosya.trimStart;
         return;
       }
-
-      // end geçtiyse durdur
       if (t >= dosya.trimEnd) {
         audio.pause();
         audio.currentTime = dosya.trimStart;
@@ -358,16 +351,16 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       audio.currentTime = dosya.trimStart;
     };
 
-    const handleError = (e) => console.error('Dosya yükleme hatası:', e);
+    const handleError = (e) => console.error("Dosya yükleme hatası:", e);
 
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('canplay', handleLoadedMetadata);
-    audio.addEventListener('loadeddata', handleLoadedMetadata);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("canplay", handleLoadedMetadata);
+    audio.addEventListener("loadeddata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
 
-    audio.preload = 'auto';
+    audio.preload = "auto";
     if (audio.readyState === 0) audio.load();
     else if (audio.duration) handleLoadedMetadata();
 
@@ -377,20 +370,20 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
     return () => {
       clearTimeout(timeout);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('canplay', handleLoadedMetadata);
-      audio.removeEventListener('loadeddata', handleLoadedMetadata);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("canplay", handleLoadedMetadata);
+      audio.removeEventListener("loadeddata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
     };
   }, [dosya.id, dosya.trimStart, dosya.trimEnd, dosya.duration, isPlaying, onUpdate]);
 
   const formatTime = (seconds) => {
-    if (seconds === null || seconds === undefined || isNaN(seconds)) return '0:00';
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const togglePlay = async () => {
@@ -405,13 +398,13 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
     try {
       audio.volume = 0.6;
-      audio.currentTime = dosya.trimStart; // ✅ her play’de başlangıca git
+      audio.currentTime = dosya.trimStart;
       await audio.play();
       setIsPlaying(true);
     } catch (err) {
-      console.error('Oynatma hatası:', err);
+      console.error("Oynatma hatası:", err);
       setIsPlaying(false);
-      alert('Ses çalınamadı. Tarayıcı engeli olabilir, tekrar play’e bas.');
+      alert("Ses çalınamadı. Tekrar play’e bas.");
     }
   };
 
@@ -419,7 +412,6 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     const newStart = parseFloat(e.target.value);
     const clamped = Math.min(newStart, dosya.trimEnd - MIN_GAP);
 
-    // oynuyorsa start değişince ses de oraya gitsin
     const audio = audioRef.current;
     if (audio && isPlaying) audio.currentTime = clamped;
 
@@ -430,7 +422,6 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     const newEnd = parseFloat(e.target.value);
     const clamped = Math.max(newEnd, dosya.trimStart + MIN_GAP);
 
-    // oynuyorsa ve end currentTime’ın altına çekildiyse durdur
     const audio = audioRef.current;
     if (audio && isPlaying && audio.currentTime >= clamped) {
       audio.pause();
@@ -442,12 +433,60 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   };
 
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
-
   const startPct = dosya.duration ? (dosya.trimStart / dosya.duration) * 100 : 0;
   const endPct = dosya.duration ? (dosya.trimEnd / dosya.duration) * 100 : 0;
 
   return (
     <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
+      {/* Thumb stilleri (component içinde) */}
+      <style>{`
+        .trimRange {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 20px;              /* thumb yakalamayı kolaylaştırır */
+          background: transparent;
+          pointer-events: none;      /* track tıklamasını kapat */
+          position: absolute;
+          left: 0;
+          top: -6px;
+        }
+
+        /* Thumb: minik yuvarlak */
+        .trimRange::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 9999px;
+          background: white;
+          border: 2px solid #a855f7; /* mor */
+          box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+          pointer-events: auto;      /* sadece thumb sürüklenebilir */
+          cursor: grab;
+        }
+        .trimRange:active::-webkit-slider-thumb {
+          cursor: grabbing;
+          transform: scale(1.05);
+        }
+
+        /* Firefox */
+        .trimRange::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 9999px;
+          background: white;
+          border: 2px solid #a855f7;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+          pointer-events: auto;
+          cursor: grab;
+        }
+        .trimRange::-moz-range-track {
+          background: transparent;
+          border: none;
+        }
+      `}</style>
+
       <audio ref={audioRef} src={dosya.url} preload="auto" />
 
       <div className="flex items-center justify-between mb-3">
@@ -457,9 +496,11 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             onClick={togglePlay}
             disabled={!dosya.isReady}
             className={`p-2 rounded-full transition flex-shrink-0 ${
-              dosya.isReady ? 'bg-purple-100 hover:bg-purple-200 active:scale-95' : 'bg-gray-100 cursor-not-allowed opacity-50'
+              dosya.isReady
+                ? "bg-purple-100 hover:bg-purple-200 active:scale-95"
+                : "bg-gray-100 cursor-not-allowed opacity-50"
             }`}
-            title={dosya.isReady ? (isPlaying ? 'Durdur' : 'Oynat') : 'Dosya yükleniyor...'}
+            title={dosya.isReady ? (isPlaying ? "Durdur" : "Oynat") : "Dosya yükleniyor..."}
           >
             {isPlaying ? <Pause className="w-4 h-4 text-purple-600" /> : <Play className="w-4 h-4 text-purple-600" />}
           </button>
@@ -474,7 +515,11 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           </div>
         </div>
 
-        <button type="button" onClick={() => onRemove(dosya.id)} className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => onRemove(dosya.id)}
+          className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0"
+        >
           <X className="w-4 h-4 text-red-600" />
         </button>
       </div>
@@ -484,13 +529,13 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           <div className="flex justify-between text-xs text-gray-600">
             <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
             <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
-            <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
+            <span className={selectedDuration > 310 ? "text-red-600 font-bold" : "text-green-600 font-bold"}>
               Süre: {formatTime(selectedDuration)}
             </span>
           </div>
 
-          {/* ✅ Tek bar görünümü */}
-          <div className="relative pt-2">
+          {/* Tek bar + iki thumb */}
+          <div className="relative">
             <div
               className="h-2 rounded-lg bg-gray-200"
               style={{
@@ -504,26 +549,34 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               }}
             />
 
-            {/* Start thumb (şeffaf slider) */}
+            {/* Start range (üstte/alta geçme z-index) */}
             <input
               type="range"
               min="0"
               max={Math.max(0, dosya.duration - MIN_GAP)}
               step="0.1"
               value={dosya.trimStart}
+              onPointerDown={() => setActiveThumb("start")}
+              onMouseDown={() => setActiveThumb("start")}
+              onTouchStart={() => setActiveThumb("start")}
               onChange={handleStartChange}
-              className="absolute left-0 top-0 w-full h-6 opacity-0 cursor-pointer"
+              className="trimRange"
+              style={{ zIndex: activeThumb === "start" ? 3 : 2 }}
             />
 
-            {/* End thumb (şeffaf slider) */}
+            {/* End range */}
             <input
               type="range"
               min={MIN_GAP}
               max={dosya.duration}
               step="0.1"
               value={dosya.trimEnd}
+              onPointerDown={() => setActiveThumb("end")}
+              onMouseDown={() => setActiveThumb("end")}
+              onTouchStart={() => setActiveThumb("end")}
               onChange={handleEndChange}
-              className="absolute left-0 top-0 w-full h-6 opacity-0 cursor-pointer"
+              className="trimRange"
+              style={{ zIndex: activeThumb === "end" ? 3 : 2 }}
             />
 
             <div className="flex justify-between text-xs text-gray-400 mt-2">
