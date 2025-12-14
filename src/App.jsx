@@ -378,21 +378,50 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const STEP_FINE = 0.005;
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  let cancelled = false;
 
-    const handleLoadedMetadata = () => {
-      const dur = audio.duration;
-      if (!dur || isNaN(dur) || dur <= 0) return;
+  // zaten hazırsa tekrar uğraşma
+  if (dosya.isReady && dosya.duration > 0) return;
 
-      const firstInit = !dosya.duration || dosya.duration <= 0;
+  const probe = new Audio();
+  probe.preload = 'metadata';
+  probe.src = dosya.url;
 
-      onUpdate(dosya.id, {
-        duration: dur,
-        isReady: true,
-        ...(firstInit ? { trimStart: 0, trimEnd: Math.min(310, dur) } : {})
-      });
-    };
+  const done = (dur) => {
+    if (cancelled) return;
+    if (!dur || isNaN(dur) || dur <= 0) return;
+
+    const firstInit = !dosya.duration || dosya.duration <= 0;
+
+    onUpdate(dosya.id, {
+      duration: dur,
+      isReady: true,
+      ...(firstInit ? { trimStart: 0, trimEnd: Math.min(310, dur) } : {})
+    });
+  };
+
+  probe.onloadedmetadata = () => done(probe.duration);
+
+  probe.onerror = () => {
+    // bazı tarayıcılarda 1. sefer kaçırabiliyor, mini retry
+    setTimeout(() => {
+      if (cancelled) return;
+      const retry = new Audio();
+      retry.preload = 'metadata';
+      retry.src = dosya.url;
+      retry.onloadedmetadata = () => done(retry.duration);
+    }, 150);
+  };
+
+  // zorla başlat
+  probe.load();
+
+  return () => {
+    cancelled = true;
+    probe.src = '';
+  };
+}, [dosya.id, dosya.url]);  // ✅ sadece url/id değişince çalışsın
+
 
     const handleTimeUpdate = () => {
       if (!isPlaying) return;
