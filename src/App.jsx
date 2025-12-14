@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Music, Upload, Globe, User, Phone, Check, Play, Pause, X, AlertCircle } from 'lucide-react';
 
+// Favicon ekle
+if (typeof document !== 'undefined') {
+  const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+  link.type = 'image/svg+xml';
+  link.rel = 'icon';
+  link.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">🎵</text></svg>';
+  document.getElementsByTagName('head')[0].appendChild(link);
+}
+
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
   const [formData, setFormData] = useState({
@@ -12,7 +21,7 @@ export default function SesliOyuncakSiparis() {
     youtubeLink: ''
   });
 
-  // Hazır müzik listesi - Gerçek müzik URL'leri ile güncelleyin
+  // Hazır müzik listesi - YOUTUBE'A ÇEVRİLDİ
   const [hazirMuzikler] = useState([
     { 
       id: 1, 
@@ -23,31 +32,36 @@ export default function SesliOyuncakSiparis() {
     { 
       id: 2, 
       isim: 'Twinkle Twinkle Little Star', 
-      type: 'file',
-      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
+      type: 'youtube',
+      youtubeId: 'yCjJyiqpAuU'
     },
     { 
       id: 3, 
       isim: 'Uyu Yavrum Uyu', 
-      type: 'file',
-      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' 
+      type: 'youtube',
+      youtubeId: 'kVFjaOyAK-s'
     }
   ]);
 
   const [playingMuzik, setPlayingMuzik] = useState(null);
   const audioRef = useRef(null);
 
-  const playMuzik = (muzik) => {
+  const playMuzik = async (muzik) => {
     if (muzik.type === 'file') {
       if (playingMuzik === muzik.id) {
         audioRef.current?.pause();
         setPlayingMuzik(null);
       } else {
-        if (audioRef.current) {
-          audioRef.current.src = muzik.url;
-          audioRef.current.play();
+        try {
+          if (audioRef.current) {
+            audioRef.current.src = muzik.url;
+            await audioRef.current.play();
+            setPlayingMuzik(muzik.id);
+          }
+        } catch (err) {
+          console.error('Oynatma hatası:', err);
+          alert('Ses çalınamadı. Lütfen tekrar deneyin.');
         }
-        setPlayingMuzik(muzik.id);
       }
     }
   };
@@ -256,29 +270,12 @@ export default function SesliOyuncakSiparis() {
                           />
                           <span className="ml-3 text-gray-700 flex-1">{muzik.isim}</span>
                           
-                          {muzik.type === 'file' && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                playMuzik(muzik);
-                              }}
-                              className="ml-2 p-2 rounded-full bg-purple-100 hover:bg-purple-200 transition"
-                            >
-                              {playingMuzik === muzik.id ? (
-                                <Pause className="w-4 h-4 text-purple-600" />
-                              ) : (
-                                <Play className="w-4 h-4 text-purple-600" />
-                              )}
-                            </button>
-                          )}
-                          
                           {formData.hazirMuzik === muzik.isim && (
                             <Check className="w-5 h-5 ml-2 text-purple-500" />
                           )}
                         </label>
                         
-                        {/* YouTube Preview */}
+                        {/* YouTube Preview - TÜM MÜZİKLER İÇİN */}
                         {muzik.type === 'youtube' && formData.hazirMuzik === muzik.isim && (
                           <div className="mt-3 rounded-xl overflow-hidden">
                             <iframe
@@ -415,10 +412,8 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('loadeddata', handleLoadedMetadata);
     
-    // Force load
     audio.load();
     
-    // Fallback timeout
     const timeout = setTimeout(() => {
       if (!dosya.isReady && audio.duration) {
         handleLoadedMetadata();
@@ -463,31 +458,22 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     };
   }, [isPlaying, dosya.trimEnd, dosya.trimStart]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     const audio = audioRef.current;
-    if (!audio) {
-      console.error('Audio element bulunamadı');
-      return;
-    }
+    if (!audio) return;
 
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.currentTime = dosya.trimStart;
-      const playPromise = audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log('Oynatma başladı');
-            setIsPlaying(true);
-          })
-          .catch(err => {
-            console.error('Oynatma hatası:', err.name, err.message);
-            alert('Ses çalınamadı. Lütfen tarayıcınızın ses iznini kontrol edin veya sayfayı yenileyin.');
-            setIsPlaying(false);
-          });
+      try {
+        audio.currentTime = dosya.trimStart;
+        await audio.play();
+        setIsPlaying(true);
+      } catch (err) {
+        console.error('Oynatma hatası:', err);
+        setIsPlaying(false);
+        alert('Ses çalınamadı. Lütfen tekrar deneyin.');
       }
     }
   };
@@ -517,12 +503,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
   return (
     <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
-      <audio 
-        ref={audioRef} 
-        src={dosya.url} 
-        preload="metadata"
-        onError={(e) => console.error('Audio yükleme hatası:', e)}
-      />
+      <audio ref={audioRef} src={dosya.url} preload="metadata" />
       
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -535,7 +516,6 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
                 ? 'bg-purple-100 hover:bg-purple-200' 
                 : 'bg-gray-100 cursor-not-allowed'
             }`}
-            title={!dosya.isReady ? 'Dosya hazırlanıyor...' : isPlaying ? 'Durdur' : 'Oynat'}
           >
             {isPlaying ? (
               <Pause className="w-4 h-4 text-purple-600" />
@@ -556,7 +536,6 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           type="button"
           onClick={() => onRemove(dosya.id)}
           className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0"
-          title="Dosyayı Kaldır"
         >
           <X className="w-4 h-4 text-red-600" />
         </button>
