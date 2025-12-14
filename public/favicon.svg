@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="45" fill="#a855f7"/>
+  <text x="50" y="70" font-size="50" text-anchor="middle" fill="white">🎵</text>
+</svg>
+```
+
+**Klasör Yapısı:**
+```
+your-repo/
+├── public/
+│   └── favicon.svg  (veya favicon.ico)
+├── src/
+│   └── (diğer dosyalarınız)
+└── package.json
