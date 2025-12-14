@@ -603,7 +603,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
         }
       `}</style>
 
-      <audio ref={audioRef} src={dosya.url} preload="auto" />
+      <audio ref={audioRef} src={dosya.url} preload="metadata" />
 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
