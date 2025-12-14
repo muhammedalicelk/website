@@ -558,14 +558,32 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
   const handleEndChange = (e) => {
     const newEnd = parseFloat(e.target.value);
+    
+    console.log('Bitiş değişti:', {
+      newEnd,
+      trimStart: dosya.trimStart,
+      duration: dosya.duration,
+      diff: newEnd - dosya.trimStart
+    });
+    
+    // Minimum bitiş = başlangıç + 0.1 saniye
+    const minEnd = dosya.trimStart + 0.1;
+    
+    // Maksimum bitiş = başlangıç + 310 saniye VEYA dosya sonu (hangisi küçükse)
     const maxAllowedEnd = Math.min(dosya.trimStart + 310, dosya.duration);
     
-    // 310 saniye sınırını kontrol et
-    if (newEnd > maxAllowedEnd) {
-      onUpdate(dosya.id, { trimEnd: maxAllowedEnd });
-    } else {
-      onUpdate(dosya.id, { trimEnd: newEnd });
+    // Değeri sınırlar içinde tut
+    let finalEnd = newEnd;
+    if (finalEnd < minEnd) {
+      finalEnd = minEnd;
     }
+    if (finalEnd > maxAllowedEnd) {
+      finalEnd = maxAllowedEnd;
+    }
+    
+    console.log('Final bitiş değeri:', finalEnd);
+    
+    onUpdate(dosya.id, { trimEnd: finalEnd });
   };
 
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
@@ -612,7 +630,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       </div>
 
       {dosya.isReady && dosya.duration > 0 && (
-        <div className="space-y-3 mt-4">
+                  <div className="space-y-3 mt-4">
           <div className="flex justify-between text-xs text-gray-600">
             <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
             <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
@@ -622,9 +640,9 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-xs text-gray-600">Başlangıç Noktası</label>
-              <span className="text-xs text-purple-600 font-medium">{formatTime(dosya.trimStart)}</span>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-semibold text-gray-700">Başlangıç Noktası</label>
+              <span className="text-xs text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">{formatTime(dosya.trimStart)}</span>
             </div>
             <input
               type="range"
@@ -634,6 +652,9 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               value={dosya.trimStart}
               onChange={handleStartChange}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              style={{
+                background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${(dosya.trimStart / dosya.duration) * 100}%, #e5e7eb ${(dosya.trimStart / dosya.duration) * 100}%, #e5e7eb 100%)`
+              }}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>0:00</span>
@@ -642,23 +663,29 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-xs text-gray-600">Bitiş Noktası</label>
-              <span className="text-xs text-purple-600 font-medium">{formatTime(dosya.trimEnd)}</span>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-semibold text-gray-700">Bitiş Noktası</label>
+              <span className="text-xs text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">{formatTime(dosya.trimEnd)}</span>
             </div>
             <input
               type="range"
-              min={dosya.trimStart + 0.1}
+              min={Math.min(dosya.trimStart + 0.1, dosya.duration)}
               max={dosya.duration}
               step="0.1"
               value={dosya.trimEnd}
               onChange={handleEndChange}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              style={{
+                background: `linear-gradient(to right, #ec4899 0%, #ec4899 ${(dosya.trimEnd / dosya.duration) * 100}%, #e5e7eb ${(dosya.trimEnd / dosya.duration) * 100}%, #e5e7eb 100%)`
+              }}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>Min: {formatTime(dosya.trimStart)}</span>
+              <span>Min: {formatTime(dosya.trimStart + 0.1)}</span>
               <span>Max: {formatTime(dosya.duration)}</span>
             </div>
+            <p className="text-xs text-gray-500 mt-1 italic">
+              ℹ️ Maksimum seçilebilir süre: {formatTime(Math.min(310, dosya.duration - dosya.trimStart))}
+            </p>
           </div>
 
           {/* Progress Bar */}
