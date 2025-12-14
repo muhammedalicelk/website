@@ -29,14 +29,6 @@ export default function SesliOyuncakSiparis() {
     { id: 3, isim: 'Uyu Yavrum Uyu', type: 'youtube', youtubeId: 'kVFjaOyAK-s' }
   ]);
 
-  const audioRef = useRef(null);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.onended = () => {};
-    }
-  }, []);
-
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
     const newFiles = files.map((file) => ({
@@ -50,25 +42,25 @@ export default function SesliOyuncakSiparis() {
       isReady: false
     }));
 
-    setFormData({
-      ...formData,
-      yukluDosyalar: [...formData.yukluDosyalar, ...newFiles],
+    setFormData((prev) => ({
+      ...prev,
+      yukluDosyalar: [...prev.yukluDosyalar, ...newFiles],
       muzikSecimi: 'yukle'
-    });
+    }));
   };
 
   const removeDosya = (id) => {
-    setFormData({
-      ...formData,
-      yukluDosyalar: formData.yukluDosyalar.filter((f) => f.id !== id)
-    });
+    setFormData((prev) => ({
+      ...prev,
+      yukluDosyalar: prev.yukluDosyalar.filter((f) => f.id !== id)
+    }));
   };
 
   const updateDosya = (id, updates) => {
-    setFormData({
-      ...formData,
-      yukluDosyalar: formData.yukluDosyalar.map((f) => (f.id === id ? { ...f, ...updates } : f))
-    });
+    setFormData((prev) => ({
+      ...prev,
+      yukluDosyalar: prev.yukluDosyalar.map((f) => (f.id === id ? { ...f, ...updates } : f))
+    }));
   };
 
   const handleSubmit = () => {
@@ -97,8 +89,6 @@ export default function SesliOyuncakSiparis() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <audio ref={audioRef} />
-
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-xl p-8 mb-6 text-center">
           <div className="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -219,9 +209,9 @@ export default function SesliOyuncakSiparis() {
                             name="hazirMuzik"
                             value={muzik.isim}
                             checked={formData.hazirMuzik === muzik.isim}
-                            onChange={(e) => {
-                              setFormData({ ...formData, hazirMuzik: e.target.value, muzikSecimi: 'hazir' });
-                            }}
+                            onChange={(e) =>
+                              setFormData({ ...formData, hazirMuzik: e.target.value, muzikSecimi: 'hazir' })
+                            }
                             className="w-4 h-4 text-purple-500"
                           />
                           <span className="ml-3 text-gray-700 flex-1">{muzik.isim}</span>
@@ -307,12 +297,21 @@ export default function SesliOyuncakSiparis() {
   );
 }
 
+/* ===========================
+   TEK BAR + 2 YUVARLAK TUTAMAÇ
+   + HASSAS AYAR
+   - Normal sürükle: 0.05s
+   - SHIFT ile: 0.005s
+   - Mouse wheel: mikro ayar
+   =========================== */
 function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeThumb, setActiveThumb] = useState(null); // "start" | "end" | null
+  const [activeThumb, setActiveThumb] = useState(null); // "start" | "end"
   const audioRef = useRef(null);
 
-  const MIN_GAP = 0.1;
+  const MIN_GAP = 0.05;      // 50ms minimum aralık
+  const STEP_NORMAL = 0.05;  // normal
+  const STEP_FINE = 0.005;   // SHIFT ile ultra hassas
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -333,12 +332,14 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
     const handleTimeUpdate = () => {
       if (!isPlaying) return;
+
       const t = audio.currentTime;
 
       if (t < dosya.trimStart) {
         audio.currentTime = dosya.trimStart;
         return;
       }
+
       if (t >= dosya.trimEnd) {
         audio.pause();
         audio.currentTime = dosya.trimStart;
@@ -351,16 +352,13 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       audio.currentTime = dosya.trimStart;
     };
 
-    const handleError = (e) => console.error("Dosya yükleme hatası:", e);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleLoadedMetadata);
+    audio.addEventListener('loadeddata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
 
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("canplay", handleLoadedMetadata);
-    audio.addEventListener("loadeddata", handleLoadedMetadata);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
-
-    audio.preload = "auto";
+    audio.preload = 'auto';
     if (audio.readyState === 0) audio.load();
     else if (audio.duration) handleLoadedMetadata();
 
@@ -370,20 +368,19 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
     return () => {
       clearTimeout(timeout);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("canplay", handleLoadedMetadata);
-      audio.removeEventListener("loadeddata", handleLoadedMetadata);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleLoadedMetadata);
+      audio.removeEventListener('loadeddata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
     };
   }, [dosya.id, dosya.trimStart, dosya.trimEnd, dosya.duration, isPlaying, onUpdate]);
 
   const formatTime = (seconds) => {
-    if (seconds === null || seconds === undefined || isNaN(seconds)) return "0:00";
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const togglePlay = async () => {
@@ -402,15 +399,21 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       await audio.play();
       setIsPlaying(true);
     } catch (err) {
-      console.error("Oynatma hatası:", err);
+      console.error('Oynatma hatası:', err);
       setIsPlaying(false);
-      alert("Ses çalınamadı. Tekrar play’e bas.");
+      alert('Ses çalınamadı. Tekrar play’e bas.');
     }
   };
 
+  const getStep = (e) => (e.shiftKey ? STEP_FINE : STEP_NORMAL);
+
+  const snap = (val, step) => Math.round(val / step) * step;
+
   const handleStartChange = (e) => {
-    const newStart = parseFloat(e.target.value);
-    const clamped = Math.min(newStart, dosya.trimEnd - MIN_GAP);
+    const step = getStep(e);
+    const raw = parseFloat(e.target.value);
+    const value = snap(raw, step);
+    const clamped = Math.min(value, dosya.trimEnd - MIN_GAP);
 
     const audio = audioRef.current;
     if (audio && isPlaying) audio.currentTime = clamped;
@@ -419,8 +422,10 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   };
 
   const handleEndChange = (e) => {
-    const newEnd = parseFloat(e.target.value);
-    const clamped = Math.max(newEnd, dosya.trimStart + MIN_GAP);
+    const step = getStep(e);
+    const raw = parseFloat(e.target.value);
+    const value = snap(raw, step);
+    const clamped = Math.max(value, dosya.trimStart + MIN_GAP);
 
     const audio = audioRef.current;
     if (audio && isPlaying && audio.currentTime >= clamped) {
@@ -432,27 +437,41 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     onUpdate(dosya.id, { trimEnd: clamped });
   };
 
+  // Mouse wheel micro-adjust
+  const handleWheel = (type, e) => {
+    e.preventDefault();
+    const step = e.shiftKey ? STEP_FINE : STEP_NORMAL;
+    const dir = e.deltaY < 0 ? step : -step;
+
+    if (type === 'start') {
+      const next = Math.min(Math.max(0, dosya.trimStart + dir), dosya.trimEnd - MIN_GAP);
+      onUpdate(dosya.id, { trimStart: next });
+      if (audioRef.current && isPlaying) audioRef.current.currentTime = next;
+    } else {
+      const next = Math.max(Math.min(dosya.duration, dosya.trimEnd + dir), dosya.trimStart + MIN_GAP);
+      onUpdate(dosya.id, { trimEnd: next });
+    }
+  };
+
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
   const startPct = dosya.duration ? (dosya.trimStart / dosya.duration) * 100 : 0;
   const endPct = dosya.duration ? (dosya.trimEnd / dosya.duration) * 100 : 0;
 
   return (
     <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
-      {/* Thumb stilleri (component içinde) */}
       <style>{`
         .trimRange {
           -webkit-appearance: none;
           appearance: none;
           width: 100%;
-          height: 20px;              /* thumb yakalamayı kolaylaştırır */
+          height: 26px;              /* yakalamayı kolaylaştır */
           background: transparent;
-          pointer-events: none;      /* track tıklamasını kapat */
+          pointer-events: none;      /* sadece thumb tıklanabilir */
           position: absolute;
           left: 0;
-          top: -6px;
+          top: -10px;
         }
 
-        /* Thumb: minik yuvarlak */
         .trimRange::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
@@ -460,14 +479,18 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           height: 16px;
           border-radius: 9999px;
           background: white;
-          border: 2px solid #a855f7; /* mor */
+          border: 2px solid #a855f7;
           box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-          pointer-events: auto;      /* sadece thumb sürüklenebilir */
+          pointer-events: auto;
           cursor: grab;
         }
         .trimRange:active::-webkit-slider-thumb {
           cursor: grabbing;
           transform: scale(1.05);
+        }
+
+        .trimRange.end::-webkit-slider-thumb {
+          border-color: #ec4899; /* end pembe */
         }
 
         /* Firefox */
@@ -480,6 +503,9 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           box-shadow: 0 1px 3px rgba(0,0,0,0.25);
           pointer-events: auto;
           cursor: grab;
+        }
+        .trimRange.end::-moz-range-thumb {
+          border-color: #ec4899;
         }
         .trimRange::-moz-range-track {
           background: transparent;
@@ -496,11 +522,9 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             onClick={togglePlay}
             disabled={!dosya.isReady}
             className={`p-2 rounded-full transition flex-shrink-0 ${
-              dosya.isReady
-                ? "bg-purple-100 hover:bg-purple-200 active:scale-95"
-                : "bg-gray-100 cursor-not-allowed opacity-50"
+              dosya.isReady ? 'bg-purple-100 hover:bg-purple-200 active:scale-95' : 'bg-gray-100 cursor-not-allowed opacity-50'
             }`}
-            title={dosya.isReady ? (isPlaying ? "Durdur" : "Oynat") : "Dosya yükleniyor..."}
+            title={dosya.isReady ? (isPlaying ? 'Durdur' : 'Oynat') : 'Dosya yükleniyor...'}
           >
             {isPlaying ? <Pause className="w-4 h-4 text-purple-600" /> : <Play className="w-4 h-4 text-purple-600" />}
           </button>
@@ -512,14 +536,13 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             ) : (
               <span className="text-xs text-green-600">✓ Hazır - Toplam: {formatTime(dosya.duration)}</span>
             )}
+            <div className="text-[11px] text-gray-500 mt-1">
+              İpucu: <b>SHIFT</b> ile ultra hassas · Mouse wheel ile mikro ayar
+            </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onRemove(dosya.id)}
-          className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0"
-        >
+        <button type="button" onClick={() => onRemove(dosya.id)} className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex-shrink-0">
           <X className="w-4 h-4 text-red-600" />
         </button>
       </div>
@@ -529,7 +552,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           <div className="flex justify-between text-xs text-gray-600">
             <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
             <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
-            <span className={selectedDuration > 310 ? "text-red-600 font-bold" : "text-green-600 font-bold"}>
+            <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
               Süre: {formatTime(selectedDuration)}
             </span>
           </div>
@@ -549,34 +572,36 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               }}
             />
 
-            {/* Start range (üstte/alta geçme z-index) */}
+            {/* Start */}
             <input
               type="range"
               min="0"
               max={Math.max(0, dosya.duration - MIN_GAP)}
-              step="0.1"
+              step={STEP_FINE}
               value={dosya.trimStart}
-              onPointerDown={() => setActiveThumb("start")}
-              onMouseDown={() => setActiveThumb("start")}
-              onTouchStart={() => setActiveThumb("start")}
+              onPointerDown={() => setActiveThumb('start')}
+              onMouseDown={() => setActiveThumb('start')}
+              onTouchStart={() => setActiveThumb('start')}
+              onWheel={(e) => handleWheel('start', e)}
               onChange={handleStartChange}
-              className="trimRange"
-              style={{ zIndex: activeThumb === "start" ? 3 : 2 }}
+              className="trimRange start"
+              style={{ zIndex: activeThumb === 'start' ? 3 : 2 }}
             />
 
-            {/* End range */}
+            {/* End */}
             <input
               type="range"
               min={MIN_GAP}
               max={dosya.duration}
-              step="0.1"
+              step={STEP_FINE}
               value={dosya.trimEnd}
-              onPointerDown={() => setActiveThumb("end")}
-              onMouseDown={() => setActiveThumb("end")}
-              onTouchStart={() => setActiveThumb("end")}
+              onPointerDown={() => setActiveThumb('end')}
+              onMouseDown={() => setActiveThumb('end')}
+              onTouchStart={() => setActiveThumb('end')}
+              onWheel={(e) => handleWheel('end', e)}
               onChange={handleEndChange}
-              className="trimRange"
-              style={{ zIndex: activeThumb === "end" ? 3 : 2 }}
+              className="trimRange end"
+              style={{ zIndex: activeThumb === 'end' ? 3 : 2 }}
             />
 
             <div className="flex justify-between text-xs text-gray-400 mt-2">
