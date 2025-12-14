@@ -19,10 +19,11 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Dosya Trimmer Component (GÜNCELLENDİ)
+// Dosya Trimmer Component (GÜNCELLENDİ: Hata Yönetimi İyileştirildi)
 function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [playbackError, setPlaybackError] = useState(null); // Yeni: Oynatma hataları için
   const audioRef = useRef(null);
   const animationRef = useRef(null);
   
@@ -113,6 +114,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     };
   }, [isPlaying, dosya.trimEnd, dosya.trimStart]);
 
+  // Toggle Play (Oynatma Hata Yönetimi GÜNCELLENDİ)
   const togglePlay = async () => {
     const audio = audioRef.current;
     if (!audio || !dosya.isReady) return;
@@ -120,11 +122,13 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
+      setPlaybackError(null); // Hata varsa durdurulduğunda temizle
     } else {
       try {
         audio.volume = 0.7;
         // Çalmaya başlamadan önce başlangıç noktasına ayarla
         audio.currentTime = dosya.trimStart;
+        setPlaybackError(null); // Oynatma denemesi öncesi hatayı temizle
 
         const playPromise = audio.play();
 
@@ -134,17 +138,28 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             .catch(err => {
               console.error('Oynatma hatası:', err.name, err.message);
               setIsPlaying(false);
-              alert('🔊 Ses çalınamadı. Tarayıcı Otomatik Oynatmayı engellemiş olabilir.');
+              
+              let errorMessage = 'Bilinmeyen bir oynatma hatası oluştu.';
+              
+              // Tarayıcı kısıtlaması hatası (Autoplay engeli)
+              if (err.name === 'NotAllowedError') {
+                  errorMessage = '🔊 Tarayıcı Otomatik Oynatmayı engelledi. Lütfen tekrar Oynat butonuna tıklayın.';
+              } else if (err.name === 'NotSupportedError') {
+                  errorMessage = '❌ Bu ses dosyası formatı desteklenmiyor. Lütfen MP3 deneyin.';
+              }
+
+              setPlaybackError(errorMessage);
             });
         }
       } catch (err) {
         console.error('Beklenmeyen oynatma hatası:', err);
         setIsPlaying(false);
+        setPlaybackError('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
       }
     }
   };
 
-  // Başlangıç kaydırıcısı (GÜNCELLENDİ)
+  // Başlangıç kaydırıcısı
   const handleStartChange = (e) => {
     const newStart = parseFloat(e.target.value);
     // Başlangıç, bitişten en az 0.1 saniye küçük olmalı (kaydırıcıların takılmasını engeller)
@@ -152,7 +167,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     onUpdate(dosya.id, { trimStart: clampedStart });
   };
 
-  // Bitiş kaydırıcısı (GÜNCELLENDİ)
+  // Bitiş kaydırıcısı
   const handleEndChange = (e) => {
     const newEnd = parseFloat(e.target.value);
     // Bitiş, başlangıçtan en az 0.1 saniye büyük olmalı (kaydırıcıların takılmasını engeller)
@@ -219,6 +234,15 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           <X className="w-4 h-4 text-red-600" />
         </button>
       </div>
+
+      {/* Oynatma Hata Mesajı (Playback) - Artık alert kullanmıyoruz */}
+      {playbackError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2 mb-4">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <p className="text-xs text-red-600">{playbackError}</p>
+          </div>
+      )}
+
 
       {dosya.isReady && dosya.duration > 0 && (
         <div className="space-y-4 mt-4">
@@ -294,7 +318,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             />
           </div>
 
-          {/* Bitiş Noktası Slider (RENGİ EŞİTLENDİ) */}
+          {/* Bitiş Noktası Slider */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="text-xs font-semibold text-gray-700">Bitiş Noktası</label>
@@ -310,8 +334,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
               onChange={handleEndChange}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
               style={{
-                // Slider'ın solundaki rengi Bitiş değerine göre ayarla
-                // Rengi mor (purple) yaptım
+                // Slider'ın solundaki rengi Bitiş değerine göre ayarla (Renk eşitleme önceki adımdan korundu)
                 background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${
                     (dosya.trimEnd / dosya.duration) * 100
                 }%, #e5e7eb ${
@@ -324,7 +347,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             </p>
           </div>
 
-          {/* Hata Mesajı */}
+          {/* Hata Mesajı (Süre Sınırı) */}
           {selectedDuration > 310 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
@@ -411,7 +434,8 @@ export default function SesliOyuncakSiparis() {
 
   const handleSubmit = () => {
     if (!formData.musteriAdi || !formData.telefon) {
-      alert('Lütfen ad ve telefon bilgilerini doldurun!');
+      // alert() yerine UI modal/message kullanılması gerekir, burada sadece console.log yapalım
+      console.error('Lütfen ad ve telefon bilgilerini doldurun!');
       return;
     }
     
@@ -430,7 +454,8 @@ export default function SesliOyuncakSiparis() {
                 // Seçili dosyalardan süresi 310 saniyeyi geçen var mı kontrol et
                 const hasLongFile = formData.yukluDosyalar.some(f => (f.trimEnd - f.trimStart) > 310);
                 if (hasLongFile) {
-                     alert('Lütfen yüklediğiniz dosyalardan birinin süresini 310 saniye veya altına kısaltın!');
+                     // alert() yerine console.log yapalım
+                     console.error('Lütfen yüklediğiniz dosyalardan birinin süresini 310 saniye veya altına kısaltın!');
                      return;
                 }
                 isMuzikSecili = true;
@@ -455,11 +480,13 @@ export default function SesliOyuncakSiparis() {
     }
     
     if (!isMuzikSecili) {
-        alert('Lütfen bir müzik seçimi yapın!');
+        // alert() yerine console.log yapalım
+        console.error('Lütfen bir müzik seçimi yapın!');
         return;
     }
 
-    alert('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
+    // Başarılı mesajı yerine console log
+    console.log('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
     console.log('--- Sipariş Özeti ---');
     console.log('Müşteri:', formData.musteriAdi);
     console.log('Telefon:', formData.telefon);
