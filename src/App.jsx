@@ -467,13 +467,35 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       setIsPlaying(false);
     } else {
       try {
+        // Önce ses seviyesini ayarla
+        audio.volume = 0.5;
         audio.currentTime = dosya.trimStart;
-        await audio.play();
-        setIsPlaying(true);
+        
+        // Play promise'i düzgün handle et
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(err => {
+              console.error('Oynatma hatası:', err);
+              setIsPlaying(false);
+              
+              // Daha açıklayıcı hata mesajı
+              if (err.name === 'NotAllowedError') {
+                alert('🔊 Tarayıcı ses çalmayı engelledi. Lütfen tekrar play butonuna basın.');
+              } else if (err.name === 'NotSupportedError') {
+                alert('❌ Bu ses dosyası formatı desteklenmiyor.');
+              } else {
+                alert('⚠️ Ses çalınamadı: ' + err.message);
+              }
+            });
+        }
       } catch (err) {
-        console.error('Oynatma hatası:', err);
+        console.error('Beklenmeyen hata:', err);
         setIsPlaying(false);
-        alert('Ses çalınamadı. Lütfen tekrar deneyin.');
       }
     }
   };
@@ -513,9 +535,10 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             disabled={!dosya.isReady}
             className={`p-2 rounded-full transition flex-shrink-0 ${
               dosya.isReady 
-                ? 'bg-purple-100 hover:bg-purple-200' 
-                : 'bg-gray-100 cursor-not-allowed'
+                ? 'bg-purple-100 hover:bg-purple-200 active:scale-95' 
+                : 'bg-gray-100 cursor-not-allowed opacity-50'
             }`}
+            title={dosya.isReady ? (isPlaying ? 'Durdur' : 'Oynat') : 'Dosya yükleniyor...'}
           >
             {isPlaying ? (
               <Pause className="w-4 h-4 text-purple-600" />
