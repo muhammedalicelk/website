@@ -2,6 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Music, Upload, Globe, User, Play, Pause, X, AlertCircle } from 'lucide-react';
 
 /* =========================================================
+   ✅ Ayı teması ayarları
+   ========================================================= */
+const PAGE_TITLE = 'Memory Drop Studio Ön Sipariş Ekranı';
+const LOGO_PATH = '/memory-drop-logo.png'; // ✅ public/memory-drop-logo.png olmalı
+
+/* =========================================================
    ✅ HAZIR MÜZİK KATALOĞU
    Yeni şarkı eklemek için sadece buraya 1 satır ekle:
    YT('Şarkı Adı', 'YouTubeID', { tags: ['etiket1','etiket2'] }),
@@ -25,13 +31,6 @@ function YT(title, youtubeId, extra = {}) {
   };
 }
 
-if (typeof document !== 'undefined') {
-  const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-  link.type = 'image/png';
-  link.rel = 'icon';
-  link.href = '/memory-drop-logo.png'; // public içine koyduğun dosya
-  document.getElementsByTagName('head')[0].appendChild(link);
-}
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
   const [formData, setFormData] = useState({
@@ -42,6 +41,20 @@ export default function SesliOyuncakSiparis() {
     yukluDosyalar: [],
     youtubeLink: ''
   });
+
+  // ✅ Sekme başlığı + favicon (tek yerden, güvenli)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    document.title = PAGE_TITLE;
+
+    const link =
+      document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/png';
+    link.rel = 'icon';
+    link.href = LOGO_PATH;
+    document.head.appendChild(link);
+  }, []);
 
   // ✅ Unmount olunca tüm URL'leri temizle (memory leak olmasın)
   useEffect(() => {
@@ -123,17 +136,23 @@ export default function SesliOyuncakSiparis() {
   };
 
   return (
-   <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-xl p-8 mb-6 text-center">
-        <div className="w-20 h-20 bg-gradient-to-r from-amber-200 to-yellow-200 rounded-full mx-auto mb-4 flex items-center justify-center shadow-inner">
-  <img
-    src="/memory-drop-logo.png"
-    alt="Memory Drop Studio"
-    className="w-14 h-14 object-contain rounded-lg"
-  />
-</div>
+          <div className="w-20 h-20 bg-gradient-to-r from-amber-200 to-yellow-200 rounded-full mx-auto mb-4 flex items-center justify-center shadow-inner overflow-hidden">
+            <img
+              src={LOGO_PATH}
+              alt="Memory Drop Studio"
+              className="w-14 h-14 object-contain"
+              onError={(e) => {
+                // PNG gelmezse en azından boş kalmasın:
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            {/* PNG gelmezse arkada sarı yuvarlak zaten kalıyor */}
+          </div>
+
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Memory Drop Studio Ön Sipariş Ekranı</h1>
           <p className="text-gray-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun</p>
         </div>
@@ -193,8 +212,8 @@ export default function SesliOyuncakSiparis() {
                 onClick={() => setActiveTab('hazir')}
                 className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'hazir'
-                   ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
-: 'bg-amber-50 text-stone-700 hover:bg-amber-100'
+                    ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
+                    : 'bg-amber-50 text-stone-700 hover:bg-amber-100'
                 }`}
               >
                 <Music className="w-4 h-4" />
@@ -206,8 +225,8 @@ export default function SesliOyuncakSiparis() {
                 onClick={() => setActiveTab('yukle')}
                 className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'yukle'
-                   ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
-: 'bg-amber-50 text-stone-700 hover:bg-amber-100'
+                    ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
+                    : 'bg-amber-50 text-stone-700 hover:bg-amber-100'
                 }`}
               >
                 <Upload className="w-4 h-4" />
@@ -219,8 +238,8 @@ export default function SesliOyuncakSiparis() {
                 onClick={() => setActiveTab('internet')}
                 className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'internet'
-                   ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
-: 'bg-amber-50 text-stone-700 hover:bg-amber-100'
+                    ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
+                    : 'bg-amber-50 text-stone-700 hover:bg-amber-100'
                 }`}
               >
                 <Globe className="w-4 h-4" />
@@ -229,7 +248,7 @@ export default function SesliOyuncakSiparis() {
             </div>
 
             {/* İçerik */}
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-amber-50/40 rounded-xl p-6 border border-amber-100">
               {/* Hazır */}
               {activeTab === 'hazir' && (
                 <HazirMuzikPicker formData={formData} setFormData={setFormData} />
@@ -240,10 +259,10 @@ export default function SesliOyuncakSiparis() {
                 <div>
                   <p className="text-sm text-gray-600 mb-4">Dosya yükle (MP3 / WAV)</p>
 
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition mb-4">
-                    <Upload className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                  <div className="border-2 border-dashed border-amber-300 rounded-xl p-8 text-center hover:border-amber-500 transition mb-4 bg-white/60">
+                    <Upload className="w-12 h-12 mx-auto text-amber-600 mb-3" />
                     <label className="cursor-pointer">
-                      <span className="text-purple-600 font-medium hover:text-purple-700">
+                      <span className="text-amber-800 font-medium hover:text-amber-900">
                         Dosya Seç (Birden fazla seçilebilir)
                       </span>
                       <input type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden" />
@@ -273,11 +292,13 @@ export default function SesliOyuncakSiparis() {
                   <input
                     type="url"
                     value={formData.youtubeLink}
-                    onChange={(e) => setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition"
+                    onChange={(e) =>
+                      setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition bg-white"
                     placeholder="https://youtube.com/watch?v=..."
                   />
-                  <p className="text-xs text-amber-600 mt-2">Not: 310 saniyelik bölümü biz seçeriz.</p>
+                  <p className="text-xs text-amber-700 mt-2">Not: 310 saniyelik bölümü biz seçeriz.</p>
                 </div>
               )}
             </div>
@@ -287,7 +308,7 @@ export default function SesliOyuncakSiparis() {
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-pink-600 hover:to-purple-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-amber-800 hover:to-yellow-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             Siparişi Tamamla
           </button>
@@ -310,23 +331,20 @@ function HazirMuzikPicker({ formData, setFormData }) {
   const filtered = SONGS.filter((s) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return (
-      s.title.toLowerCase().includes(q) ||
-      (s.tags || []).some((t) => t.toLowerCase().includes(q))
-    );
+    return s.title.toLowerCase().includes(q) || (s.tags || []).some((t) => t.toLowerCase().includes(q));
   });
 
   const selected = SONGS.find((s) => s.id === formData.hazirMuzikId);
 
   return (
     <div>
-      <p className="text-sm text-gray-600 mb-3">Listeden seç (istersen ara):</p>
+      <p className="text-sm text-gray-700 mb-3">Listeden seç (istersen ara):</p>
 
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition mb-3"
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition mb-3 bg-white"
         placeholder="Ara: ninni / english / dandini ..."
       />
 
@@ -350,17 +368,17 @@ function HazirMuzikPicker({ formData, setFormData }) {
       </select>
 
       {filtered.length === 0 && (
-        <div className="mt-3 text-sm text-amber-700">Sonuç yok. Arama kelimesini değiştir.</div>
+        <div className="mt-3 text-sm text-amber-800">Sonuç yok. Arama kelimesini değiştir.</div>
       )}
 
       {selected?.type === 'youtube' && (
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-semibold text-gray-700">Seçilen: {selected.title}</div>
+            <div className="text-sm font-semibold text-gray-800">Seçilen: {selected.title}</div>
             <div className="text-xs text-gray-500">{selected.tags?.length ? selected.tags.join(' • ') : ''}</div>
           </div>
 
-          <div className="rounded-xl overflow-hidden">
+          <div className="rounded-xl overflow-hidden border border-amber-100">
             <iframe
               width="100%"
               height="220"
@@ -393,7 +411,6 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   // ✅ 1) Metadata'yı probe Audio ile al (2. dosyada takılma fix)
   useEffect(() => {
     let cancelled = false;
-
     if (dosya.isReady && dosya.duration > 0) return;
 
     const probe = new Audio();
@@ -432,7 +449,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       cancelled = true;
       probe.src = '';
     };
-  }, [dosya.id, dosya.url]);
+  }, [dosya.id, dosya.url]); // ✅ önemli
 
   // ✅ 2) Trim sınır kontrolü (çalarken kırpsın)
   useEffect(() => {
@@ -441,7 +458,6 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
 
     const handleTimeUpdate = () => {
       if (!isPlaying) return;
-
       const t = audio.currentTime;
 
       if (t < dosya.trimStart) {
@@ -488,7 +504,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
     }
 
     try {
-      audio.volume = 0.6;
+      audio.volume = 0.8;
       audio.currentTime = dosya.trimStart;
       await audio.play();
       setIsPlaying(true);
@@ -550,7 +566,8 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const endPct = dosya.duration ? (dosya.trimEnd / dosya.duration) * 100 : 0;
 
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
+    <div className="bg-white border-2 border-amber-100 rounded-xl p-4">
+      {/* ✅ CSS (hatalı süslü parantezleri düzelttim) */}
       <style>{`
         .trimRange {
           -webkit-appearance: none;
@@ -571,17 +588,19 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           height: 16px;
           border-radius: 9999px;
           background: white;
-         border: 2px solid #b45309;
+          border: 2px solid #b45309; /* amber-700 */
           box-shadow: 0 1px 3px rgba(0,0,0,0.25);
           pointer-events: auto;
           cursor: grab;
         }
+
         .trimRange:active::-webkit-slider-thumb {
           cursor: grabbing;
           transform: scale(1.05);
         }
 
-.trimRange.end::-webkit-slider-thumb { border-color: #92400e; }
+        .trimRange.end::-webkit-slider-thumb {
+          border-color: #92400e; /* amber-800 */
         }
 
         .trimRange::-moz-range-thumb {
@@ -594,8 +613,11 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           pointer-events: auto;
           cursor: grab;
         }
-.trimRange.end::-webkit-slider-thumb { border-color: #92400e; }
+
+        .trimRange.end::-moz-range-thumb {
+          border-color: #92400e;
         }
+
         .trimRange::-moz-range-track {
           background: transparent;
           border: none;
@@ -612,23 +634,23 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
             disabled={!dosya.isReady}
             className={`p-2 rounded-full transition flex-shrink-0 ${
               dosya.isReady
-                ? 'bg-purple-100 hover:bg-purple-200 active:scale-95'
+                ? 'bg-amber-100 hover:bg-amber-200 active:scale-95'
                 : 'bg-gray-100 cursor-not-allowed opacity-50'
             }`}
           >
             {isPlaying ? (
-              <Pause className="w-4 h-4 text-purple-600" />
+              <Pause className="w-4 h-4 text-amber-900" />
             ) : (
-              <Play className="w-4 h-4 text-purple-600" />
+              <Play className="w-4 h-4 text-amber-900" />
             )}
           </button>
 
           <div className="flex-1 min-w-0">
             <span className="text-sm text-gray-700 truncate block">{dosya.name}</span>
             {!dosya.isReady ? (
-              <span className="text-xs text-amber-600 animate-pulse">⏳ Dosya hazırlanıyor...</span>
+              <span className="text-xs text-amber-700 animate-pulse">⏳ Dosya hazırlanıyor...</span>
             ) : (
-              <span className="text-xs text-green-600">✓ Hazır - Toplam: {formatTime(dosya.duration)}</span>
+              <span className="text-xs text-green-700">✓ Hazır - Toplam: {formatTime(dosya.duration)}</span>
             )}
 
             <div className="text-[11px] text-gray-500 mt-1">
@@ -649,13 +671,9 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       {dosya.isReady && dosya.duration > 0 && (
         <div className="space-y-3 mt-4">
           <div className="flex justify-between text-xs text-gray-600">
-            <span>
-              Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong>
-            </span>
-            <span>
-              Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong>
-            </span>
-            <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
+            <span>Başlangıç: <strong>{formatTime(dosya.trimStart)}</strong></span>
+            <span>Bitiş: <strong>{formatTime(dosya.trimEnd)}</strong></span>
+            <span className={selectedDuration > 310 ? 'text-red-600 font-bold' : 'text-green-700 font-bold'}>
               Süre: {formatTime(selectedDuration)}
             </span>
           </div>
