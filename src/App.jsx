@@ -667,8 +667,8 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
                 background: `linear-gradient(to right,
                   #e5e7eb 0%,
                   #e5e7eb ${startPct}%,
-                  #a855f7 ${startPct}%,
-                  #a855f7 ${endPct}%,
+                  #b45309 ${startPct}%,
+                  #b45309 ${endPct}%,
                   #e5e7eb ${endPct}%,
                   #e5e7eb 100%)`
               }}
