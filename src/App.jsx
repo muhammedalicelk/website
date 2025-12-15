@@ -571,7 +571,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           height: 16px;
           border-radius: 9999px;
           background: white;
-          border: 2px solid #a855f7;
+         border: 2px solid #b45309;
           box-shadow: 0 1px 3px rgba(0,0,0,0.25);
           pointer-events: auto;
           cursor: grab;
@@ -581,8 +581,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           transform: scale(1.05);
         }
 
-        .trimRange.end::-webkit-slider-thumb {
-          border-color: #ec4899;
+.trimRange.end::-webkit-slider-thumb { border-color: #92400e; }
         }
 
         .trimRange::-moz-range-thumb {
@@ -590,13 +589,12 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
           height: 16px;
           border-radius: 9999px;
           background: white;
-          border: 2px solid #a855f7;
+          border: 2px solid #b45309;
           box-shadow: 0 1px 3px rgba(0,0,0,0.25);
           pointer-events: auto;
           cursor: grab;
         }
-        .trimRange.end::-moz-range-thumb {
-          border-color: #ec4899;
+.trimRange.end::-webkit-slider-thumb { border-color: #92400e; }
         }
         .trimRange::-moz-range-track {
           background: transparent;
