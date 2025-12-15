@@ -133,7 +133,7 @@ export default function SesliOyuncakSiparis() {
           <div className="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center">
             <Music className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Sesli Oyuncak Siparişi</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Memory Drop Studio Ön Sipariş Ekranı</h1>
           <p className="text-gray-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun</p>
         </div>
 
