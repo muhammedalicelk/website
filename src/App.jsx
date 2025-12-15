@@ -123,7 +123,7 @@ export default function SesliOyuncakSiparis() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 py-8 px-4">
+   <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-xl p-8 mb-6 text-center">
