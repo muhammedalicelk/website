@@ -153,7 +153,7 @@ export default function SesliOyuncakSiparis() {
                   type="text"
                   value={formData.musteriAdi}
                   onChange={(e) => setFormData({ ...formData, musteriAdi: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition"
                   placeholder="Adınızı girin"
                 />
               </div>
@@ -164,7 +164,7 @@ export default function SesliOyuncakSiparis() {
                   type="tel"
                   value={formData.telefon}
                   onChange={(e) => setFormData({ ...formData, telefon: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition"
                   placeholder="0555 555 55 55"
                 />
               </div>
@@ -274,7 +274,7 @@ export default function SesliOyuncakSiparis() {
                     type="url"
                     value={formData.youtubeLink}
                     onChange={(e) => setFormData({ ...formData, youtubeLink: e.target.value, muzikSecimi: 'internet' })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition"
                     placeholder="https://youtube.com/watch?v=..."
                   />
                   <p className="text-xs text-amber-600 mt-2">Not: 310 saniyelik bölümü biz seçeriz.</p>
