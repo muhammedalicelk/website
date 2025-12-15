@@ -326,7 +326,7 @@ function HazirMuzikPicker({ formData, setFormData }) {
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition mb-3"
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition mb-3"
         placeholder="Ara: ninni / english / dandini ..."
       />
 
@@ -339,7 +339,7 @@ function HazirMuzikPicker({ formData, setFormData }) {
             muzikSecimi: 'hazir'
           }))
         }
-        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition bg-white"
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-600 focus:outline-none transition bg-white"
       >
         <option value="">— Müzik seç —</option>
         {filtered.map((s) => (
