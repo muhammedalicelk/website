@@ -25,16 +25,13 @@ function YT(title, youtubeId, extra = {}) {
   };
 }
 
-// Favicon
 if (typeof document !== 'undefined') {
   const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-  link.type = 'image/svg+xml';
+  link.type = 'image/png';
   link.rel = 'icon';
-  link.href =
-    'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">🎵</text></svg>';
+  link.href = '/memory-drop-logo.png'; // public içine koyduğun dosya
   document.getElementsByTagName('head')[0].appendChild(link);
 }
-
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
   const [formData, setFormData] = useState({
