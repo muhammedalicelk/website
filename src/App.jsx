@@ -193,8 +193,8 @@ export default function SesliOyuncakSiparis() {
                 onClick={() => setActiveTab('hazir')}
                 className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'hazir'
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                   ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
+: 'bg-amber-50 text-stone-700 hover:bg-amber-100'
                 }`}
               >
                 <Music className="w-4 h-4" />
@@ -206,8 +206,8 @@ export default function SesliOyuncakSiparis() {
                 onClick={() => setActiveTab('yukle')}
                 className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'yukle'
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                   ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
+: 'bg-amber-50 text-stone-700 hover:bg-amber-100'
                 }`}
               >
                 <Upload className="w-4 h-4" />
@@ -219,8 +219,8 @@ export default function SesliOyuncakSiparis() {
                 onClick={() => setActiveTab('internet')}
                 className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-medium transition flex items-center justify-center gap-2 ${
                   activeTab === 'internet'
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                   ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow-lg'
+: 'bg-amber-50 text-stone-700 hover:bg-amber-100'
                 }`}
               >
                 <Globe className="w-4 h-4" />
