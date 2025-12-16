@@ -14,17 +14,22 @@ const SONGS = [
   /* =====================
      ÇOCUK
      ===================== */
-  YT('Dandini Dandini Dastana', '_zsQXwIOILo', { tags: ['Çocuk', 'Türkçe'] }),
+  YT('Kukuli – Bakkal Amca ', 't8moJLzPhoU', { tags: ['Çocuk', 'Türkçe'] }),
+    YT('Dandini Dandini Dastana', '4NBBFSqv_GY', { tags: ['Çocuk', 'Türkçe'] }),
+    YT('Otobüsün Tekerleği Dönüyor', 'W-nWnHmC4Gc', { tags: ['Çocuk', 'Türkçe'] }),
+    YT('Arı Vız Vız', '9xOIKkvTOdE', { tags: ['Çocuk', 'Türkçe'] }),
+    YT('Ayı', 'QSGubfzxIa0', { tags: ['Çocuk', 'Türkçe'] }),
+   YT('Gezegenler', 'rGGZnh8W7Oo', { tags: ['Çocuk', 'Türkçe'] }),
   YT('Twinkle Twinkle Little Star', 'yCjJyiqpAuU', { tags: ['Çocuk', 'İngilizce'] }),
 
   /* =====================
      TÜRKÇE ROMANTİK
      ===================== */
-  YT('Sen Benim Şarkılarımsın', 'xkq5q2R0Q9A', { tags: ['Romantik', 'Türkçe'] }),
-  YT('Senden Daha Güzel', '9QpGZbQk1jA', { tags: ['Romantik', 'Türkçe'] }),
-  YT('Bir Tek Sen', 'bqE1VZ4XK3E', { tags: ['Romantik', 'Türkçe'] }),
-  YT('Ben Sana Mecburum', 'Y1c1n1F6eGQ', { tags: ['Romantik', 'Türkçe'] }),
-  YT('Aşk', 'kJpG7yZqYpE', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Sen Benim Şarkılarımsın', '9GEXm1k3a1E', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Senden Daha Güzel', '3bfkyXtuIXk', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Ben Bir Tek Kadın (Adam) Sevdim', '0Dps6y-Y-ko', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Ben Sana Mecburum', 'GzDGB70IVCM', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Aşk', 'CGNcI0Fsl9c', { tags: ['Romantik', 'Türkçe'] }),
 
   /* =====================
      R&B
