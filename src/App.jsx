@@ -42,7 +42,7 @@ const SONGS = [
   YT('La Mentira', 'P8BLkulZGX8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Love In Portofino', 'AKDLoUSaPV8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Bésame Mucho', 'M4z6xdu1iX8', { tags: ['Romantik', 'İspanyolca'] }),
-  YT('Historia de un Amor', 'WJdgon8MF3Y', { tags: ['Romantik', 'İspanyolca'] }),
+  YT('Historia de un Amor', 'HzjE33U_gy8', { tags: ['Romantik', 'İspanyolca'] }),
 
   /* =====================
      ROMANTİK – İNGİLİZCE
