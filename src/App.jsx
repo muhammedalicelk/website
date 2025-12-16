@@ -12,7 +12,7 @@ const SONGS = [
   YT('What You Won't Do For Love', 'n9DmdAwUbxc', { tags: ['R&B', 'İngilizce'] }),
   YT('La Mentira', 'P8BLkulZGX8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Obsesión', 'AKDLoUSaPV8', { tags: ['Romantik', 'İspanyolca'] }),
-  YT('Dance Me to the End of Love', '8StKOyYY3Gs', { tags: ['Romantik', 'İngilizce'] })
+  YT('Dance Me to the End of Love', '8StKOyYY3Gs', { tags: ['Romantik', 'İngilizce'] }),
  
 ];
 
