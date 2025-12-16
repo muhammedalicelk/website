@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Music, Upload, Globe, User, Play, Pause, X, AlertCircle } from 'lucide-react';
 
 /* =========================================================
-   YOUTUBE HELPER
+   YOUTUBE ID PARSER (HER FORMAT)
    ========================================================= */
 function getYouTubeId(input) {
   if (!input) return '';
@@ -40,19 +40,18 @@ function YT(title, youtubeId, extra = {}) {
   return {
     id: `yt_${youtubeId}`,
     title,
-    type: 'youtube',
     youtubeId,
     tags: extra.tags || []
   };
 }
 
 /* =========================================================
-   SONG LIST
+   HAZIR MÜZİKLER
    ========================================================= */
 const SONGS = [
   YT('Dandini Dandini Dastana', '4NBBFSqv_GY', { tags: ['Çocuk', 'Türkçe'] }),
-  YT('Twinkle Twinkle Little Star', 'yCjJyiqpAuU', { tags: ['Çocuk', 'İngilizce'] }),
-  YT('Ben Sana Mecburum', 'GzDGB70IVCM', { tags: ['Romantik', 'Türkçe'] })
+  YT('Twinkle Twinkle Little Star', 'yCjJyiqpAuU', { tags: ['Çocuk', 'English'] }),
+  YT('Ben Sana Mecburum', 'GzDGB70IVCM', { tags: ['Romantik', 'Türkçe'] }),
 ];
 
 /* =========================================================
@@ -60,14 +59,15 @@ const SONGS = [
    ========================================================= */
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
-  const [formData, setFormData] = useState({
-    musteriAdi: '',
+  const [form, setForm] = useState({
+    ad: '',
     telefon: '',
-    hazirMuzikId: '',
-    yukluDosyalar: [],
-    youtubeLink: ''
+    hazirId: '',
+    youtubeLink: '',
+    files: []
   });
 
+  /* Title + Favicon */
   useEffect(() => {
     document.title = 'Memory Drop Studio Ön Sipariş';
     let link = document.querySelector("link[rel='icon']");
@@ -90,6 +90,7 @@ export default function SesliOyuncakSiparis() {
               src="/memory-drop-logo.png"
               alt="Memory Drop Studio"
               className="w-full h-full object-cover"
+              draggable={false}
             />
           </div>
 
@@ -104,37 +105,80 @@ export default function SesliOyuncakSiparis() {
         {/* FORM */}
         <div className="bg-white rounded-3xl shadow-xl p-8">
 
-          {/* TABS */}
-          <div className="flex gap-2 mb-6">
-            <Tab active={activeTab === 'hazir'} onClick={() => setActiveTab('hazir')}>
-              <Music className="w-4 h-4" /> Hazır
-            </Tab>
-            <Tab active={activeTab === 'yukle'} onClick={() => setActiveTab('yukle')}>
-              <Upload className="w-4 h-4" /> Dosya
-            </Tab>
-            <Tab active={activeTab === 'internet'} onClick={() => setActiveTab('internet')}>
-              <Globe className="w-4 h-4" /> İnternet
-            </Tab>
+          {/* İLETİŞİM */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-stone-800 mb-4 flex items-center">
+              <User className="w-5 h-5 mr-2 text-amber-700" />
+              İletişim Bilgileri
+            </h2>
+
+            <div className="space-y-4">
+              <Input
+                label="Ad Soyad *"
+                value={form.ad}
+                onChange={(v) => setForm({ ...form, ad: v })}
+              />
+              <Input
+                label="Telefon *"
+                value={form.telefon}
+                onChange={(v) => setForm({ ...form, telefon: v })}
+              />
+            </div>
           </div>
 
-          {/* CONTENT */}
-          <div className="bg-amber-50/40 rounded-xl p-6 border border-amber-100">
+          {/* MÜZİK */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-stone-800 flex items-center mb-4">
+              <Music className="w-5 h-5 mr-2 text-amber-700" />
+              Müzik Seçimi
+            </h2>
 
-            {activeTab === 'hazir' && (
-              <HazirMuzikPicker formData={formData} setFormData={setFormData} />
-            )}
-
-            {activeTab === 'internet' && (
-              <InternetMuzikPicker formData={formData} setFormData={setFormData} />
-            )}
-
-            {activeTab === 'yukle' && (
-              <div className="text-sm text-stone-600">
-                Dosya yükleme zaten çalışıyor, buraya dokunmadım 👍
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-700 mt-0.5" />
+              <div className="text-sm text-amber-900">
+                Müzik süresi maksimum <b>310 saniye</b>.
               </div>
-            )}
+            </div>
 
+            {/* TABS */}
+            <div className="flex gap-2 mb-6">
+              <Tab active={activeTab === 'hazir'} onClick={() => setActiveTab('hazir')}>
+                <Music className="w-4 h-4" /> Hazır
+              </Tab>
+              <Tab active={activeTab === 'dosya'} onClick={() => setActiveTab('dosya')}>
+                <Upload className="w-4 h-4" /> Dosya
+              </Tab>
+              <Tab active={activeTab === 'internet'} onClick={() => setActiveTab('internet')}>
+                <Globe className="w-4 h-4" /> İnternet
+              </Tab>
+            </div>
+
+            <div className="bg-amber-50/40 rounded-xl p-6 border border-amber-100">
+
+              {activeTab === 'hazir' && (
+                <HazirMuzik form={form} setForm={setForm} />
+              )}
+
+              {activeTab === 'internet' && (
+                <InternetMuzik form={form} setForm={setForm} />
+              )}
+
+              {activeTab === 'dosya' && (
+                <div className="text-sm text-stone-600">
+                  Dosya yükleme altyapısı mevcut (trim kısmını daha önce yazdık 👍)
+                </div>
+              )}
+
+            </div>
           </div>
+
+          {/* SUBMIT */}
+          <button
+            className="w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-amber-800 hover:to-yellow-700 transition"
+            onClick={() => alert('Sipariş alındı (demo)')}
+          >
+            Siparişi Tamamla
+          </button>
         </div>
       </div>
     </div>
@@ -142,7 +186,7 @@ export default function SesliOyuncakSiparis() {
 }
 
 /* =========================================================
-   TAB
+   COMPONENTS
    ========================================================= */
 function Tab({ active, children, onClick }) {
   return (
@@ -150,7 +194,7 @@ function Tab({ active, children, onClick }) {
       onClick={onClick}
       className={`flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 ${
         active
-          ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white'
+          ? 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white shadow'
           : 'bg-amber-100 text-stone-700 hover:bg-amber-200'
       }`}
     >
@@ -159,18 +203,31 @@ function Tab({ active, children, onClick }) {
   );
 }
 
+function Input({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-stone-700 mb-2">{label}</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:border-amber-600 outline-none"
+      />
+    </div>
+  );
+}
+
 /* =========================================================
    HAZIR MÜZİK
    ========================================================= */
-function HazirMuzikPicker({ formData, setFormData }) {
-  const selected = SONGS.find(s => s.id === formData.hazirMuzikId);
+function HazirMuzik({ form, setForm }) {
+  const selected = SONGS.find(s => s.id === form.hazirId);
 
   return (
-    <div>
+    <>
       <select
-        value={formData.hazirMuzikId}
-        onChange={(e) => setFormData(p => ({ ...p, hazirMuzikId: e.target.value }))}
-        className="w-full p-3 rounded-xl border border-amber-200 bg-white"
+        className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-white"
+        value={form.hazirId}
+        onChange={(e) => setForm({ ...form, hazirId: e.target.value })}
       >
         <option value="">— Müzik seç —</option>
         {SONGS.map(s => (
@@ -189,31 +246,29 @@ function HazirMuzikPicker({ formData, setFormData }) {
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
 /* =========================================================
-   INTERNET MÜZİK (ÇALIŞAN KISIM)
+   INTERNET MÜZİK (ÇALIŞAN)
    ========================================================= */
-function InternetMuzikPicker({ formData, setFormData }) {
-  const videoId = getYouTubeId(formData.youtubeLink);
+function InternetMuzik({ form, setForm }) {
+  const videoId = getYouTubeId(form.youtubeLink);
 
   return (
-    <div>
+    <>
       <input
         type="url"
-        value={formData.youtubeLink}
-        onChange={(e) =>
-          setFormData(p => ({ ...p, youtubeLink: e.target.value }))
-        }
+        value={form.youtubeLink}
+        onChange={(e) => setForm({ ...form, youtubeLink: e.target.value })}
         placeholder="YouTube linki yapıştır"
-        className="w-full p-3 rounded-xl border border-amber-200 bg-white"
+        className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-white"
       />
 
-      {formData.youtubeLink && !videoId && (
+      {form.youtubeLink && !videoId && (
         <div className="text-sm text-red-600 mt-2">
-          Link okunamadı
+          Link tanınmadı
         </div>
       )}
 
@@ -228,6 +283,6 @@ function InternetMuzikPicker({ formData, setFormData }) {
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
