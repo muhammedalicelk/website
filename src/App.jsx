@@ -10,19 +10,41 @@ function YT(title, youtubeId, extra = {}) {
     tags: extra.tags || [],
   };
 }
-
-/* =========================================================
-   HAZIR MÜZİK KATALOĞU
-   Yeni eklemek için:
-   YT('Şarkı Adı','YouTubeID',{tags:['etiket']}),
-   ========================================================= */
 const SONGS = [
+  /* =====================
+     ÇOCUK
+     ===================== */
   YT('Dandini Dandini Dastana', '_zsQXwIOILo', { tags: ['Çocuk', 'Türkçe'] }),
   YT('Twinkle Twinkle Little Star', 'yCjJyiqpAuU', { tags: ['Çocuk', 'İngilizce'] }),
+
+  /* =====================
+     TÜRKÇE ROMANTİK
+     ===================== */
+  YT('Sen Benim Şarkılarımsın', 'xkq5q2R0Q9A', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Senden Daha Güzel', '9QpGZbQk1jA', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Bir Tek Sen', 'bqE1VZ4XK3E', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Ben Sana Mecburum', 'Y1c1n1F6eGQ', { tags: ['Romantik', 'Türkçe'] }),
+  YT('Aşk', 'kJpG7yZqYpE', { tags: ['Romantik', 'Türkçe'] }),
+
+  /* =====================
+     R&B
+     ===================== */
   YT("What You Won't Do For Love", 'n9DmdAwUbxc', { tags: ['R&B', 'İngilizce'] }),
+
+  /* =====================
+     ROMANTİK – İSPANYOLCA
+     ===================== */
   YT('La Mentira', 'P8BLkulZGX8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Obsesión', 'AKDLoUSaPV8', { tags: ['Romantik', 'İspanyolca'] }),
+  YT('Bésame Mucho', 'M4z6xdu1iX8', { tags: ['Romantik', 'İspanyolca'] }),
+  YT('Historia de un Amor', 'WJdgon8MF3Y', { tags: ['Romantik', 'İspanyolca'] }),
+
+  /* =====================
+     ROMANTİK – İNGİLİZCE
+     ===================== */
   YT('Dance Me to the End of Love', '8StKOyYY3Gs', { tags: ['Romantik', 'İngilizce'] }),
+  YT('I Love You Baby', 'AiIBKcd4m5Q', { tags: ['Romantik', 'İngilizce'] }),
+  YT('And I Love You So', 'SKp1HKM_4TY', { tags: ['Romantik', 'İngilizce'] }),
 ];
 
 
