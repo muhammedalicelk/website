@@ -12,16 +12,8 @@ const SONGS = [
   YT('What You Won't Do For Love', 'n9DmdAwUbxc', { tags: ['R&B', 'İngilizce'] }),
   YT('La Mentira', 'P8BLkulZGX8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Obsesión', 'AKDLoUSaPV8', { tags: ['Romantik', 'İspanyolca'] }),
-  YT('Dance Me to the End of Love', '8StKOyYY3Gs', { tags: ['Romantik', 'İngilizce'] }),
-  YT('Besame Mucho', 'M4z6xdu1iX8', { tags: ['Romantik', 'İspanyolca'] }),
-  YT('Historia de un Amor', 'WJdgon8MF3Y', { tags: ['Romantik', 'İspanyolca'] }),
-   YT('I Love You Baby', 'AiIBKcd4m5Q', { tags: ['Romantik', 'İngilizce'] }),
-   YT('And I Love You So', 'SKp1HKM_4TY', { tags: ['Romantik', 'İngilizce'] }),
-   YT('Sen Benim Şarkılarımsın', 'xkq5q2R0Q9A', { tags: ['Romantik', 'Türkçe'] }),
-YT('Bir Tek Sen', 'bqE1VZ4XK3E', { tags: ['Romantik', 'Türkçe'] }),
-YT('Senden Daha Güzel', '9QpGZbQk1jA', { tags: ['Romantik', 'Türkçe'] }),
-YT('Ben Sana Mecburum', 'Y1c1n1F6eGQ', { tags: ['Romantik', 'Türkçe'] }),
-YT('Aşk', 'kJpG7yZqYpE', { tags: ['Romantik', 'Türkçe'] })
+  YT('Dance Me to the End of Love', '8StKOyYY3Gs', { tags: ['Romantik', 'İngilizce'] })
+ 
 ];
 
 function YT(title, youtubeId, extra = {}) {
