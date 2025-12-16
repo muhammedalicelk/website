@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Music, Upload, Globe, User, Play, Pause, X, AlertCircle } from 'lucide-react';
 
+function YT(title, youtubeId, extra = {}) {
+  return {
+    id: `yt_${youtubeId}`,
+    title,
+    type: 'youtube',
+    youtubeId,
+    tags: extra.tags || [],
+  };
+}
+
 /* =========================================================
    HAZIR MÜZİK KATALOĞU
    Yeni eklemek için:
@@ -9,22 +19,12 @@ import { Music, Upload, Globe, User, Play, Pause, X, AlertCircle } from 'lucide-
 const SONGS = [
   YT('Dandini Dandini Dastana', '_zsQXwIOILo', { tags: ['Çocuk', 'Türkçe'] }),
   YT('Twinkle Twinkle Little Star', 'yCjJyiqpAuU', { tags: ['Çocuk', 'İngilizce'] }),
-  YT('What You Won't Do For Love', 'n9DmdAwUbxc', { tags: ['R&B', 'İngilizce'] }),
+  YT("What You Won't Do For Love", 'n9DmdAwUbxc', { tags: ['R&B', 'İngilizce'] }),
   YT('La Mentira', 'P8BLkulZGX8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Obsesión', 'AKDLoUSaPV8', { tags: ['Romantik', 'İspanyolca'] }),
   YT('Dance Me to the End of Love', '8StKOyYY3Gs', { tags: ['Romantik', 'İngilizce'] }),
- 
 ];
 
-function YT(title, youtubeId, extra = {}) {
-  return {
-    id: `yt_${youtubeId}`,
-    title,
-    type: 'youtube',
-    youtubeId,
-    tags: extra.tags || []
-  };
-}
 
 // ✅ crypto.randomUUID yoksa fallback
 function makeId() {
