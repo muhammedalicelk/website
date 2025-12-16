@@ -10,6 +10,7 @@ const SONGS = [
   YT('Dandini Dandini Dastana', '_zsQXwIOILo', { tags: ['ninni', 'türkçe'] }),
   YT('Twinkle Twinkle Little Star', 'yCjJyiqpAuU', { tags: ['kids', 'english'] }),
   YT('Uyu Yavrum Uyu', 'kVFjaOyAK-s', { tags: ['ninni', 'türkçe'] })
+  YT('La Mentira', 'P8BLkulZGX8', { tags: ['romantik', 'latin'] })  
 ];
 
 function YT(title, youtubeId, extra = {}) {
