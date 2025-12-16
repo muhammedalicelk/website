@@ -332,7 +332,7 @@ function HazirMuzikPicker({ formData, setFormData }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:border-amber-600 focus:outline-none transition mb-3 bg-white"
-        placeholder="Ara: ninni / english / dandini ..."
+        placeholder="Ara: Şarkı İsmi / Şarkı Türü / Dil "
       />
 
       <select
