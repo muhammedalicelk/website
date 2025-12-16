@@ -209,40 +209,68 @@ export default function SesliOyuncakSiparis() {
     }));
   };
 
-  const handleSubmit = () => {
-    if (!formData.musteriAdi.trim() || !formData.telefon.trim()) {
-      alert('Lütfen ad ve telefon bilgilerini doldurun!');
+  const handleSubmit = async () => {
+  if (!formData.musteriAdi.trim() || !formData.telefon.trim()) {
+    alert('Lütfen ad ve telefon bilgilerini doldurun!');
+    return;
+  }
+
+  if (activeTab === 'hazir' && !formData.hazirMuzikId) {
+    alert('Lütfen bir müzik seçin!');
+    return;
+  }
+
+  if (activeTab === 'yukle' && formData.yukluDosyalar.length === 0) {
+    alert('Lütfen en az bir dosya yükleyin!');
+    return;
+  }
+
+  if (activeTab === 'internet') {
+    if (!formData.youtubeLink.trim()) {
+      alert('Lütfen bir YouTube linki girin!');
       return;
     }
-
-    if (activeTab === 'hazir' && !formData.hazirMuzikId) {
-      alert('Lütfen bir müzik seçin!');
+    if (!internetVideoId) {
+      alert('YouTube linki geçersiz görünüyor. Lütfen farklı bir link deneyin.');
       return;
     }
+  }
 
-    if (activeTab === 'yukle' && formData.yukluDosyalar.length === 0) {
-      alert('Lütfen en az bir dosya yükleyin!');
+  const selectedSong = SONGS.find((s) => s.id === formData.hazirMuzikId);
+
+  // ✅ TELEGRAM'A GÖNDER (ALERT'TEN HEMEN ÖNCE)
+  try {
+    const resp = await fetch('/api/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        musteriAdi: formData.musteriAdi,
+        telefon: formData.telefon,
+        activeTab,
+        hazirMuzikTitle: selectedSong?.title || '',
+        youtubeLink: formData.youtubeLink || '',
+        internetVideoId: internetVideoId || '',
+        yukluDosyaAdlari: (formData.yukluDosyalar || []).map((f) => f.name),
+      }),
+    });
+
+    const j = await resp.json();
+    if (!j.ok) {
+      alert('Sipariş oluştu ama Telegram mesajı gidmedi: ' + (j.error || 'unknown'));
       return;
     }
+  } catch (e) {
+    alert('Sipariş oluştu ama Telegram mesajı gönderilemedi: ' + (e?.message || e));
+    return;
+  }
 
-    if (activeTab === 'internet') {
-      if (!formData.youtubeLink.trim()) {
-        alert('Lütfen bir YouTube linki girin!');
-        return;
-      }
-      if (!internetVideoId) {
-        alert('YouTube linki geçersiz görünüyor. Lütfen farklı bir link deneyin.');
-        return;
-      }
-    }
+  // ✅ EN SON BUNLAR
+  alert('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
+  console.log('Sipariş Detayları:', formData);
+  console.log('Seçilen Hazır Müzik:', selectedSong);
+  console.log('İnternet VideoId:', internetVideoId);
+};
 
-    const selectedSong = SONGS.find((s) => s.id === formData.hazirMuzikId);
-
-    alert('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
-    console.log('Sipariş Detayları:', formData);
-    console.log('Seçilen Hazır Müzik:', selectedSong);
-    console.log('İnternet VideoId:', internetVideoId);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
