@@ -133,13 +133,6 @@ const NOTICE_TEXT = `Bu sayfa seri üretim öncesi deneme üretimi kapsamında o
 Amaç kullanıcı geri bildirimi ve ürün geliştirmedir. Fatura düzenlenmemektedir.
 Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`;
 
-
-    {/* ANA SAYFA */}
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
-      {/* senin mevcut tüm UI burada */}
-    </div>
-  </>
-);
 /* =========================================================
    MAIN
    ========================================================= */
