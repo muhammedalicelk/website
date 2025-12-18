@@ -133,37 +133,6 @@ const NOTICE_TEXT = `Bu sayfa seri üretim öncesi deneme üretimi kapsamında o
 Amaç kullanıcı geri bildirimi ve ürün geliştirmedir. Fatura düzenlenmemektedir.
 Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`;
 
-    {/* SABİT + AÇILIŞ UYARISI */}
-    {showNotice && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-amber-200">
-          <div className="p-6">
-            <h3 className="text-lg font-bold text-stone-900 mb-3">
-              Önemli Bilgilendirme
-            </h3>
-
-            <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-{`Bu sayfa seri üretim öncesi deneme üretimi kapsamında oluşturulmuştur.
-Ürünler sınırlı sayıda hazırlanmakta olup, ticari satış kapsamında değildir.
-Amaç kullanıcı geri bildirimi ve ürün geliştirmedir. Fatura düzenlenmemektedir.
-Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`}
-            </p>
-
-            <button
-              onClick={() => {
-                localStorage.setItem('mds_notice_ok', '1');
-                setShowNotice(false);
-              }}
-              className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600
-                         text-white py-3 rounded-xl font-semibold hover:opacity-90"
-            >
-              Okudum, Devam Et
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
 
     {/* ANA SAYFA */}
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
@@ -208,7 +177,43 @@ useEffect(() => {
     link.type = 'image/png';
     link.href = href;
   }, []);
+return (
+    <>
+      {/* SABİT + AÇILIŞ UYARISI */}
+      {showNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-amber-200">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-stone-900 mb-3">Önemli Bilgilendirme</h3>
 
+              <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
+                {NOTICE_TEXT}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('mds_notice_ok', '1');
+                  setShowNotice(false);
+                }}
+                className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600
+                           text-white py-3 rounded-xl font-semibold hover:opacity-90"
+              >
+                Okudum, Devam Et
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ANA SAYFA */}
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
+        {/* senin mevcut tüm UI burada */}
+      </div>
+    </>
+  );
+}
   // Unmount olunca objectURL temizle
   useEffect(() => {
     return () => {
