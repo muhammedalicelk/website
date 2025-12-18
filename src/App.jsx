@@ -59,27 +59,20 @@ const SONGS = [
 /* =========================================================
    Utils
    ========================================================= */
-
-// crypto.randomUUID yoksa fallback
 function makeId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
-// YouTube link -> videoId (11 chars)
 function extractYouTubeId(input) {
   if (!input) return '';
-
   const raw = input.trim();
-
-  // direkt 11 karakterli id yapıştırdıysa
   if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
 
   let url;
   try {
     url = new URL(raw);
   } catch {
-    // url değilse deneme: içinde v= varsa çekmeye çalış
     const vMatch = raw.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
     if (vMatch) return vMatch[1];
     const shortMatch = raw.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
@@ -92,18 +85,14 @@ function extractYouTubeId(input) {
   }
 
   const host = (url.hostname || '').replace('www.', '');
-
-  // watch?v=
   const v = url.searchParams.get('v');
   if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
 
-  // youtu.be/ID
   if (host === 'youtu.be') {
     const id = url.pathname.split('/').filter(Boolean)[0] || '';
     if (/^[a-zA-Z0-9_-]{11}$/.test(id)) return id;
   }
 
-  // /shorts/ID
   if (url.pathname.includes('/shorts/')) {
     const parts = url.pathname.split('/').filter(Boolean);
     const idx = parts.indexOf('shorts');
@@ -111,7 +100,6 @@ function extractYouTubeId(input) {
     if (/^[a-zA-Z0-9_-]{11}$/.test(id)) return id;
   }
 
-  // /embed/ID
   if (url.pathname.includes('/embed/')) {
     const parts = url.pathname.split('/').filter(Boolean);
     const idx = parts.indexOf('embed');
@@ -119,15 +107,14 @@ function extractYouTubeId(input) {
     if (/^[a-zA-Z0-9_-]{11}$/.test(id)) return id;
   }
 
-  // music.youtube.com gibi alt domainler
   if (host.endsWith('youtube.com') || host.endsWith('music.youtube.com')) {
-    // bazen /watch?v= yok, ama /v/ID veya /shorts/ID vb olabilir
     const m1 = url.pathname.match(/\/(v|embed)\/([a-zA-Z0-9_-]{11})/);
     if (m1) return m1[2];
   }
 
   return '';
 }
+
 const NOTICE_TEXT = `Bu sayfa seri üretim öncesi deneme üretimi kapsamında oluşturulmuştur.
 Ürünler sınırlı sayıda hazırlanmakta olup, ticari satış kapsamında değildir.
 Amaç kullanıcı geri bildirimi ve ürün geliştirmedir. Fatura düzenlenmemektedir.
@@ -171,45 +158,6 @@ export default function SesliOyuncakSiparis() {
     link.href = href;
   }, []);
 
-  return (
-    <>
-      {showNotice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-amber-200">
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-stone-900 mb-3">
-                Önemli Bilgilendirme
-              </h3>
-
-              <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-                {NOTICE_TEXT}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.setItem('mds_notice_ok', '1');
-                  setShowNotice(false);
-                }}
-                className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-3 rounded-xl font-semibold hover:opacity-90"
-              >
-                Okudum, Devam Et
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
-        {/* senin mevcut tüm UI burada */}
-        {/* internetVideoId değişkeni de hazır: {internetVideoId} */}
-      </div>
-    </>
-  );
-}
-;
-
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
     const newFiles = files.map((file) => ({
@@ -228,7 +176,6 @@ export default function SesliOyuncakSiparis() {
       yukluDosyalar: [...p.yukluDosyalar, ...newFiles],
     }));
 
-    // aynı dosyayı tekrar seçebilmek için input reset
     e.target.value = '';
   };
 
@@ -248,209 +195,213 @@ export default function SesliOyuncakSiparis() {
   };
 
   const handleSubmit = async () => {
-  if (!formData.musteriAdi.trim() || !formData.telefon.trim()) {
-    alert('Lütfen ad ve telefon bilgilerini doldurun!');
-    return;
-  }
-
-  if (activeTab === 'hazir' && !formData.hazirMuzikId) {
-    alert('Lütfen bir müzik seçin!');
-    return;
-  }
-
-  if (activeTab === 'yukle' && formData.yukluDosyalar.length === 0) {
-    alert('Lütfen en az bir dosya yükleyin!');
-    return;
-  }
-
-  if (activeTab === 'internet') {
-    if (!formData.youtubeLink.trim()) {
-      alert('Lütfen bir YouTube linki girin!');
+    if (!formData.musteriAdi.trim() || !formData.telefon.trim()) {
+      alert('Lütfen ad ve telefon bilgilerini doldurun!');
       return;
     }
-    if (!internetVideoId) {
-      alert('YouTube linki geçersiz görünüyor. Lütfen farklı bir link deneyin.');
+
+    if (activeTab === 'hazir' && !formData.hazirMuzikId) {
+      alert('Lütfen bir müzik seçin!');
       return;
     }
-  }
 
-  const selectedSong = SONGS.find((s) => s.id === formData.hazirMuzikId);
-
-  // ✅ TELEGRAM'A GÖNDER (ALERT'TEN HEMEN ÖNCE)
-  try {
-    const resp = await fetch('/api/order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        musteriAdi: formData.musteriAdi,
-        telefon: formData.telefon,
-        activeTab,
-        hazirMuzikTitle: selectedSong?.title || '',
-        youtubeLink: formData.youtubeLink || '',
-        internetVideoId: internetVideoId || '',
-        yukluDosyaAdlari: (formData.yukluDosyalar || []).map((f) => f.name),
-      }),
-    });
-
-    const j = await resp.json();
-    if (!j.ok) {
-      alert('Sipariş oluştu ama Telegram mesajı gidmedi: ' + (j.error || 'unknown'));
+    if (activeTab === 'yukle' && formData.yukluDosyalar.length === 0) {
+      alert('Lütfen en az bir dosya yükleyin!');
       return;
     }
-  } catch (e) {
-    alert('Sipariş oluştu ama Telegram mesajı gönderilemedi: ' + (e?.message || e));
-    return;
-  }
 
-  // ✅ EN SON BUNLAR
-  alert('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
-  console.log('Sipariş Detayları:', formData);
-  console.log('Seçilen Hazır Müzik:', selectedSong);
-  console.log('İnternet VideoId:', internetVideoId);
-};
+    if (activeTab === 'internet') {
+      if (!formData.youtubeLink.trim()) {
+        alert('Lütfen bir YouTube linki girin!');
+        return;
+      }
+      if (!internetVideoId) {
+        alert('YouTube linki geçersiz görünüyor. Lütfen farklı bir link deneyin.');
+        return;
+      }
+    }
 
+    const selectedSong = SONGS.find((s) => s.id === formData.hazirMuzikId);
+
+    try {
+      const resp = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          musteriAdi: formData.musteriAdi,
+          telefon: formData.telefon,
+          activeTab,
+          hazirMuzikTitle: selectedSong?.title || '',
+          youtubeLink: formData.youtubeLink || '',
+          internetVideoId: internetVideoId || '',
+          yukluDosyaAdlari: (formData.yukluDosyalar || []).map((f) => f.name),
+        }),
+      });
+
+      const j = await resp.json();
+      if (!j.ok) {
+        alert('Sipariş oluştu ama Telegram mesajı gidmedi: ' + (j.error || 'unknown'));
+        return;
+      }
+    } catch (e) {
+      alert('Sipariş oluştu ama Telegram mesajı gönderilemedi: ' + (e?.message || e));
+      return;
+    }
+
+    alert('Siparişiniz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
+    console.log('Sipariş Detayları:', formData);
+    console.log('Seçilen Hazır Müzik:', selectedSong);
+    console.log('İnternet VideoId:', internetVideoId);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* HEADER */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 text-center">
-          {/* LOGO: yumuşak köşeli kare */}
-          <div className="w-32 h-32 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-200 to-yellow-200 shadow-inner border border-amber-200 overflow-hidden flex items-center justify-center">
-            <img
-              src="/memory-drop-logo.png"
-              alt="Memory Drop Studio"
-              className="w-full h-full object-cover"
-              draggable={false}
-              onError={(e) => {
-                // PNG gelmiyor diye beyaz ekran olmasın, sadece görünmesin
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-
-          <h1 className="text-3xl font-bold text-stone-800 mb-2">Memory Drop Studio Ön Sipariş Ekranı</h1>
-          <p className="text-stone-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun</p>
-        </div>
-
-        {/* FORM */}
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          {/* İLETİŞİM */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-stone-800 mb-4 flex items-center">
-              <User className="w-5 h-5 mr-2 text-amber-700" />
-              İletişim Bilgileri
-            </h2>
-
-            <div className="space-y-4">
-              <Input
-                label="Ad Soyad *"
-                value={formData.musteriAdi}
-                onChange={(v) => setFormData({ ...formData, musteriAdi: v })}
-                placeholder="Adınızı girin"
-              />
-              <Input
-                label="Telefon *"
-                value={formData.telefon}
-                onChange={(v) => setFormData({ ...formData, telefon: v })}
-                placeholder="0555 555 55 55"
-              />
+    <>
+      {showNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-amber-200">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-stone-900 mb-3">Önemli Bilgilendirme</h3>
+              <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">{NOTICE_TEXT}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('mds_notice_ok', '1');
+                  setShowNotice(false);
+                }}
+                className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-3 rounded-xl font-semibold hover:opacity-90"
+              >
+                Okudum, Devam Et
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* MÜZİK */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-stone-800 flex items-center mb-4">
-              <Music className="w-5 h-5 mr-2 text-amber-700" />
-              Müzik Seçimi *
-            </h2>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
+        <div className="max-w-2xl mx-auto">
+          {/* HEADER */}
+          <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 text-center">
+            <div className="w-32 h-32 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-200 to-yellow-200 shadow-inner border border-amber-200 overflow-hidden flex items-center justify-center">
+              <img
+                src="/memory-drop-logo.png"
+                alt="Memory Drop Studio"
+                className="w-full h-full object-cover"
+                draggable={false}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-900">
-                <strong>Önemli:</strong> Müzik süresi maksimum 310 saniye olmalıdır. (5dk 10sn)
+            <h1 className="text-3xl font-bold text-stone-800 mb-2">Memory Drop Studio Ön Sipariş Ekranı</h1>
+            <p className="text-stone-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun</p>
+          </div>
+
+          {/* FORM */}
+          <div className="bg-white rounded-3xl shadow-xl p-8">
+            {/* İLETİŞİM */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-stone-800 mb-4 flex items-center">
+                <User className="w-5 h-5 mr-2 text-amber-700" />
+                İletişim Bilgileri
+              </h2>
+
+              <div className="space-y-4">
+                <Input
+                  label="Ad Soyad *"
+                  value={formData.musteriAdi}
+                  onChange={(v) => setFormData({ ...formData, musteriAdi: v })}
+                  placeholder="Adınızı girin"
+                />
+                <Input
+                  label="Telefon *"
+                  value={formData.telefon}
+                  onChange={(v) => setFormData({ ...formData, telefon: v })}
+                  placeholder="0555 555 55 55"
+                />
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-2 mb-6 flex-wrap">
-              <TabButton
-                active={activeTab === 'hazir'}
-                onClick={() => setActiveTab('hazir')}
-                icon={<Music className="w-4 h-4" />}
-              >
-                Hazır
-              </TabButton>
+            {/* MÜZİK */}
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-stone-800 flex items-center mb-4">
+                <Music className="w-5 h-5 mr-2 text-amber-700" />
+                Müzik Seçimi *
+              </h2>
 
-              <TabButton
-                active={activeTab === 'yukle'}
-                onClick={() => setActiveTab('yukle')}
-                icon={<Upload className="w-4 h-4" />}
-              >
-                Dosya
-              </TabButton>
-
-              <TabButton
-                active={activeTab === 'internet'}
-                onClick={() => setActiveTab('internet')}
-                icon={<Globe className="w-4 h-4" />}
-              >
-                İnternet
-              </TabButton>
-            </div>
-
-            {/* CONTENT */}
-            <div className="bg-amber-50/30 rounded-xl p-6 border border-amber-100">
-              {activeTab === 'hazir' && <HazirMuzikPicker formData={formData} setFormData={setFormData} />}
-
-              {activeTab === 'yukle' && (
-                <div>
-                  <p className="text-sm text-stone-700 mb-4">Dosya yükle (MP3 / WAV)</p>
-
-                  <div className="border-2 border-dashed border-amber-200 rounded-xl p-8 text-center hover:border-amber-500 transition mb-4 bg-white">
-                    <Upload className="w-12 h-12 mx-auto text-amber-700 mb-3" />
-                    <label className="cursor-pointer">
-                      <span className="text-amber-800 font-medium hover:text-amber-900">
-                        Dosya Seç (Birden fazla seçilebilir)
-                      </span>
-                      <input type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden" />
-                    </label>
-                  </div>
-
-                  {formData.yukluDosyalar.length > 0 && (
-                    <div className="space-y-4">
-                      <p className="text-sm font-medium text-stone-700">Yüklenen Dosyalar:</p>
-                      {formData.yukluDosyalar.map((dosya) => (
-                        <DosyaTrimmer key={dosya.id} dosya={dosya} onRemove={removeDosya} onUpdate={updateDosya} />
-                      ))}
-                    </div>
-                  )}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-900">
+                  <strong>Önemli:</strong> Müzik süresi maksimum 310 saniye olmalıdır. (5dk 10sn)
                 </div>
-              )}
+              </div>
 
-              {activeTab === 'internet' && (
-                <InternetMuzik
-                  youtubeLink={formData.youtubeLink}
-                  onChange={(v) => setFormData({ ...formData, youtubeLink: v })}
-                  videoId={internetVideoId}
-                />
-              )}
+              <div className="flex gap-2 mb-6 flex-wrap">
+                <TabButton active={activeTab === 'hazir'} onClick={() => setActiveTab('hazir')} icon={<Music className="w-4 h-4" />}>
+                  Hazır
+                </TabButton>
+
+                <TabButton active={activeTab === 'yukle'} onClick={() => setActiveTab('yukle')} icon={<Upload className="w-4 h-4" />}>
+                  Dosya
+                </TabButton>
+
+                <TabButton active={activeTab === 'internet'} onClick={() => setActiveTab('internet')} icon={<Globe className="w-4 h-4" />}>
+                  İnternet
+                </TabButton>
+              </div>
+
+              <div className="bg-amber-50/30 rounded-xl p-6 border border-amber-100">
+                {activeTab === 'hazir' && <HazirMuzikPicker formData={formData} setFormData={setFormData} />}
+
+                {activeTab === 'yukle' && (
+                  <div>
+                    <p className="text-sm text-stone-700 mb-4">Dosya yükle (MP3 / WAV)</p>
+
+                    <div className="border-2 border-dashed border-amber-200 rounded-xl p-8 text-center hover:border-amber-500 transition mb-4 bg-white">
+                      <Upload className="w-12 h-12 mx-auto text-amber-700 mb-3" />
+                      <label className="cursor-pointer">
+                        <span className="text-amber-800 font-medium hover:text-amber-900">Dosya Seç (Birden fazla seçilebilir)</span>
+                        <input type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden" />
+                      </label>
+                    </div>
+
+                    {formData.yukluDosyalar.length > 0 && (
+                      <div className="space-y-4">
+                        <p className="text-sm font-medium text-stone-700">Yüklenen Dosyalar:</p>
+                        {formData.yukluDosyalar.map((dosya) => (
+                          <DosyaTrimmer key={dosya.id} dosya={dosya} onRemove={removeDosya} onUpdate={updateDosya} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'internet' && (
+                  <InternetMuzik
+                    youtubeLink={formData.youtubeLink}
+                    onChange={(v) => setFormData({ ...formData, youtubeLink: v })}
+                    videoId={internetVideoId}
+                  />
+                )}
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-amber-800 hover:to-yellow-700 transition shadow-lg hover:shadow-xl"
+            >
+              Siparişi Tamamla
+            </button>
+
+            <p className="text-xs text-stone-500 text-center mt-4">
+              Siparişiniz alındıktan sonra sizinle iletişime geçeceğiz
+            </p>
           </div>
-
-          {/* Submit */}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-amber-800 hover:to-yellow-700 transition shadow-lg hover:shadow-xl"
-          >
-            Siparişi Tamamla
-          </button>
-
-          <p className="text-xs text-stone-500 text-center mt-4">Siparişiniz alındıktan sonra sizinle iletişime geçeceğiz</p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -488,6 +439,7 @@ function Input({ label, value, onChange, placeholder }) {
     </div>
   );
 }
+
 
 /* =========================================================
    HAZIR MÜZİK PICKER
