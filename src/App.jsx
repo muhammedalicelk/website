@@ -128,7 +128,10 @@ function extractYouTubeId(input) {
 
   return '';
 }
-
+const NOTICE_TEXT = `Bu sayfa seri üretim öncesi deneme üretimi kapsamında oluşturulmuştur.
+Ürünler sınırlı sayıda hazırlanmakta olup, ticari satış kapsamında değildir.
+Amaç kullanıcı geri bildirimi ve ürün geliştirmedir. Fatura düzenlenmemektedir.
+Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`;
 /* =========================================================
    MAIN
    ========================================================= */
