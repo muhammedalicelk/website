@@ -133,9 +133,6 @@ const NOTICE_TEXT = `Bu sayfa seri üretim öncesi deneme üretimi kapsamında o
 Amaç kullanıcı geri bildirimi ve ürün geliştirmedir. Fatura düzenlenmemektedir.
 Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`;
 
-/* =========================================================
-   MAIN
-   ========================================================= */
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
   const [formData, setFormData] = useState({
@@ -145,16 +142,19 @@ export default function SesliOyuncakSiparis() {
     yukluDosyalar: [],
     youtubeLink: '',
   });
-const [showNotice, setShowNotice] = useState(false);
 
-useEffect(() => {
-  const ok = localStorage.getItem('mds_notice_ok') === '1';
-  if (!ok) setShowNotice(true);
-}, []);
-  // İnternet sekmesi preview
-  const internetVideoId = useMemo(() => extractYouTubeId(formData.youtubeLink), [formData.youtubeLink]);
+  const [showNotice, setShowNotice] = useState(false);
 
-  // Title + Favicon
+  useEffect(() => {
+    const ok = localStorage.getItem('mds_notice_ok') === '1';
+    if (!ok) setShowNotice(true);
+  }, []);
+
+  const internetVideoId = useMemo(
+    () => extractYouTubeId(formData.youtubeLink),
+    [formData.youtubeLink]
+  );
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
@@ -170,15 +170,17 @@ useEffect(() => {
     link.type = 'image/png';
     link.href = href;
   }, []);
-return (
+
+  return (
     <>
-      {/* SABİT + AÇILIŞ UYARISI */}
       {showNotice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-amber-200">
             <div className="p-6">
-              <h3 className="text-lg font-bold text-stone-900 mb-3">Önemli Bilgilendirme</h3>
+              <h3 className="text-lg font-bold text-stone-900 mb-3">
+                Önemli Bilgilendirme
+              </h3>
 
               <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
                 {NOTICE_TEXT}
@@ -190,8 +192,7 @@ return (
                   localStorage.setItem('mds_notice_ok', '1');
                   setShowNotice(false);
                 }}
-                className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600
-                           text-white py-3 rounded-xl font-semibold hover:opacity-90"
+                className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-3 rounded-xl font-semibold hover:opacity-90"
               >
                 Okudum, Devam Et
               </button>
@@ -200,22 +201,14 @@ return (
         </div>
       )}
 
-      {/* ANA SAYFA */}
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-stone-100 py-10 px-4">
         {/* senin mevcut tüm UI burada */}
+        {/* internetVideoId değişkeni de hazır: {internetVideoId} */}
       </div>
     </>
   );
 }
-  // Unmount olunca objectURL temizle
-  useEffect(() => {
-    return () => {
-      for (const f of formData.yukluDosyalar) {
-        if (f?.url) URL.revokeObjectURL(f.url);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+;
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
