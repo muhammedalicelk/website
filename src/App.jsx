@@ -683,6 +683,40 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const STEP_NORMAL = 0.05;
   const STEP_FINE = 0.005;
   console.log(dosya.preview16kReady, dosya.preview16kUrl);
+   useEffect(() => {
+useEffect(() => {
+  if (!dosya.isReady) return;
+  if (dosya.trimEnd <= dosya.trimStart) return;
+
+  if (dosya.preview16kUrl) {
+    URL.revokeObjectURL(dosya.preview16kUrl);
+
+  let cancelled = false;
+
+  (async () => {
+    try {
+      const wavBlob = await fileTo16kWavBlob(
+        dosya.file,
+        dosya.trimStart,
+        dosya.trimEnd,
+        16000
+      );
+      if (cancelled) return;
+
+      const purl = URL.createObjectURL(wavBlob);
+      onUpdate(dosya.id, {
+        preview16kUrl: purl,
+        preview16kReady: true,
+      });
+    } catch (e) {
+      console.error('trim 16k failed', e);
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+}, [dosya.trimStart, dosya.trimEnd]);
   // metadata probe (2. dosya takılma fix)
   useEffect(() => {
     let cancelled = false;
