@@ -114,24 +114,37 @@ function extractYouTubeId(input) {
 
   return '';
 }
-async function fileTo16kWavBlob(file, targetSampleRate = 16000) {
+async function fileTo16kWavBlob(
+  file,
+  trimStart,
+  trimEnd,
+  targetSampleRate = 16000
+) {
   const arrayBuffer = await file.arrayBuffer();
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const decoded = await audioCtx.decodeAudioData(arrayBuffer);
 
-  // oyuncak için mono öneri
-  const numChannels = 1;
-  const length = Math.ceil(decoded.duration * targetSampleRate);
+  const startSample = Math.floor(trimStart * decoded.sampleRate);
+  const endSample = Math.floor(trimEnd * decoded.sampleRate);
+  const frameCount = Math.max(1, endSample - startSample);
 
-  const offline = new OfflineAudioContext(numChannels, length, targetSampleRate);
-
-  // mono downmix
-  const mono = offline.createBuffer(1, decoded.length, decoded.sampleRate);
+  // mono buffer (oyuncak için ideal)
+  const mono = audioCtx.createBuffer(1, frameCount, decoded.sampleRate);
   const out = mono.getChannelData(0);
+
   for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
-    const d = decoded.getChannelData(ch);
-    for (let i = 0; i < d.length; i++) out[i] += d[i] / decoded.numberOfChannels;
+    const data = decoded.getChannelData(ch);
+    for (let i = 0; i < frameCount; i++) {
+      out[i] += data[startSample + i] / decoded.numberOfChannels;
+    }
   }
+
+  // resample
+  const offline = new OfflineAudioContext(
+    1,
+    Math.ceil((frameCount / decoded.sampleRate) * targetSampleRate),
+    targetSampleRate
+  );
 
   const src = offline.createBufferSource();
   src.buffer = mono;
@@ -143,7 +156,6 @@ async function fileTo16kWavBlob(file, targetSampleRate = 16000) {
 
   return audioBufferToWavBlob(rendered);
 }
-
 function audioBufferToWavBlob(buffer) {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
