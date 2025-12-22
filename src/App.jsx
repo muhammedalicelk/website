@@ -256,11 +256,21 @@ export default function SesliOyuncakSiparis() {
       isReady: false,
     }));
 
-    setFormData((p) => ({
-      ...p,
-      yukluDosyalar: [...p.yukluDosyalar, ...newFiles],
-    }));
+   setFormData((p) => ({
+  ...p,
+  yukluDosyalar: [...p.yukluDosyalar, ...newFiles],
+}));
 
+for (const nf of newFiles) {
+  try {
+    const wavBlob = await fileTo16kWavBlob(nf.file, 16000);
+    const purl = URL.createObjectURL(wavBlob);
+    updateDosya(nf.id, { preview16kUrl: purl, preview16kReady: true });
+  } catch (err) {
+    console.error('16k convert failed:', err);
+    updateDosya(nf.id, { preview16kReady: false });
+  }
+}
     e.target.value = '';
   };
 
