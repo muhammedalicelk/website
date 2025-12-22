@@ -670,7 +670,7 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const MIN_GAP = 0.05;
   const STEP_NORMAL = 0.05;
   const STEP_FINE = 0.005;
-
+  console.log(dosya.preview16kReady, dosya.preview16kUrl);
   // metadata probe (2. dosya takılma fix)
   useEffect(() => {
     let cancelled = false;
