@@ -265,7 +265,6 @@ export default function SesliOyuncakSiparis() {
               <button
                 type="button"
                 onClick={() => {
-                  localStorage.setItem('mds_notice_ok', '1');
                   setShowNotice(false);
                 }}
                 className="mt-5 w-full bg-gradient-to-r from-amber-700 to-yellow-600 text-white py-3 rounded-xl font-semibold hover:opacity-90"
