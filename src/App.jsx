@@ -160,7 +160,9 @@ export default function SesliOyuncakSiparis() {
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     const newFiles = files.map((file) => ({
-      id: makeId(),
+      preview16kUrl: '',
+       preview16kReady: false,
+       id: makeId(),
       file,
       url: URL.createObjectURL(file),
       name: file.name,
