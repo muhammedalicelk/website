@@ -114,6 +114,90 @@ function extractYouTubeId(input) {
 
   return '';
 }
+async function fileTo16kWavBlob(file, targetSampleRate = 16000) {
+  const arrayBuffer = await file.arrayBuffer();
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+
+  // oyuncak için mono öneri
+  const numChannels = 1;
+  const length = Math.ceil(decoded.duration * targetSampleRate);
+
+  const offline = new OfflineAudioContext(numChannels, length, targetSampleRate);
+
+  // mono downmix
+  const mono = offline.createBuffer(1, decoded.length, decoded.sampleRate);
+  const out = mono.getChannelData(0);
+  for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+    const d = decoded.getChannelData(ch);
+    for (let i = 0; i < d.length; i++) out[i] += d[i] / decoded.numberOfChannels;
+  }
+
+  const src = offline.createBufferSource();
+  src.buffer = mono;
+  src.connect(offline.destination);
+  src.start(0);
+
+  const rendered = await offline.startRendering();
+  audioCtx.close?.();
+
+  return audioBufferToWavBlob(rendered);
+}
+
+function audioBufferToWavBlob(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const bitDepth = 16;
+
+  const length = buffer.length * numChannels;
+  const interleaved = new Float32Array(length);
+
+  for (let ch = 0; ch < numChannels; ch++) {
+    const data = buffer.getChannelData(ch);
+    for (let i = 0; i < buffer.length; i++) {
+      interleaved[i * numChannels + ch] = data[i];
+    }
+  }
+
+  const pcm = new Int16Array(length);
+  for (let i = 0; i < length; i++) {
+    let s = Math.max(-1, Math.min(1, interleaved[i]));
+    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = pcm.length * bytesPerSample;
+
+  const view = new DataView(new ArrayBuffer(44 + dataSize));
+  let offset = 0;
+
+  const writeString = (s) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+    offset += s.length;
+  };
+
+  writeString('RIFF');
+  view.setUint32(offset, 36 + dataSize, true); offset += 4;
+  writeString('WAVE');
+  writeString('fmt ');
+  view.setUint32(offset, 16, true); offset += 4;
+  view.setUint16(offset, 1, true); offset += 2; // PCM
+  view.setUint16(offset, numChannels, true); offset += 2;
+  view.setUint32(offset, sampleRate, true); offset += 4;
+  view.setUint32(offset, byteRate, true); offset += 4;
+  view.setUint16(offset, blockAlign, true); offset += 2;
+  view.setUint16(offset, bitDepth, true); offset += 2;
+  writeString('data');
+  view.setUint32(offset, dataSize, true); offset += 4;
+
+  for (let i = 0; i < pcm.length; i++, offset += 2) {
+    view.setInt16(offset, pcm[i], true);
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
+}
 
 const NOTICE_TEXT = `Bu sayfa seri üretim öncesi deneme üretimi kapsamında oluşturulmuştur.
 Ürünler sınırlı sayıda hazırlanmakta olup, ticari satış kapsamında değildir.
