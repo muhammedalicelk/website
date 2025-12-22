@@ -856,6 +856,20 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
       `}</style>
 
       <audio ref={audioRef} src={dosya.url} preload="metadata" />
+      {/* Oyuncakta duyulacak 16k preview */}
+<div className="mt-3">
+  <div className="text-xs font-semibold text-stone-700 mb-1">
+    Oyuncakta Duyulacak (16 kHz)
+  </div>
+
+  {!dosya.preview16kReady && (
+    <div className="text-xs text-amber-700">⏳ 16 kHz önizleme hazırlanıyor...</div>
+  )}
+
+  {dosya.preview16kReady && dosya.preview16kUrl && (
+    <audio controls src={dosya.preview16kUrl} className="w-full" />
+  )}
+</div>
 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
