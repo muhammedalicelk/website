@@ -157,7 +157,7 @@ export default function SesliOyuncakSiparis() {
     link.href = href;
   }, []);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     const newFiles = files.map((file) => ({
       id: makeId(),
