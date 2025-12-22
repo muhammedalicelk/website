@@ -133,9 +133,8 @@ export default function SesliOyuncakSiparis() {
   const [showNotice, setShowNotice] = useState(false);
 
   useEffect(() => {
-    const ok = localStorage.getItem('mds_notice_ok') === '1';
-    if (!ok) setShowNotice(true);
-  }, []);
+  setShowNotice(true);
+}, []);
 
   const internetVideoId = useMemo(
     () => extractYouTubeId(formData.youtubeLink),
