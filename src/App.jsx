@@ -683,24 +683,27 @@ function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
   const STEP_NORMAL = 0.05;
   const STEP_FINE = 0.005;
   console.log(dosya.preview16kReady, dosya.preview16kUrl);
-   useEffect(() => {
 useEffect(() => {
   if (!dosya.isReady) return;
   if (dosya.trimEnd <= dosya.trimStart) return;
 
+  // eski preview url'i temizle (memory leak olmasın)
   if (dosya.preview16kUrl) {
     URL.revokeObjectURL(dosya.preview16kUrl);
+  }
 
   let cancelled = false;
 
   (async () => {
     try {
+      // "file" objesini dosya'dan alıyoruz
       const wavBlob = await fileTo16kWavBlob(
         dosya.file,
         dosya.trimStart,
         dosya.trimEnd,
         16000
       );
+
       if (cancelled) return;
 
       const purl = URL.createObjectURL(wavBlob);
@@ -716,7 +719,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [dosya.trimStart, dosya.trimEnd]);
+}, [dosya.isReady, dosya.trimStart, dosya.trimEnd]);
   // metadata probe (2. dosya takılma fix)
   useEffect(() => {
     let cancelled = false;
