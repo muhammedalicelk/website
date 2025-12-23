@@ -401,7 +401,7 @@ for (const nf of newFiles) {
             </div>
 
             <h1 className="text-3xl font-bold text-stone-800 mb-2">Memory Drop Studio Ön Sipariş Ekranı</h1>
-            <p className="text-stone-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun</p>
+            <p className="text-stone-600">Sevdikleriniz için özel, sesli bir oyuncak oluşturun!</p>
           </div>
 
           {/* FORM */}
@@ -418,7 +418,7 @@ for (const nf of newFiles) {
                   label="Ad Soyad *"
                   value={formData.musteriAdi}
                   onChange={(v) => setFormData({ ...formData, musteriAdi: v })}
-                  placeholder="Adınızı girin"
+                  placeholder="Ad soyad giriniz."
                 />
                 <Input
                   label="Telefon *"
@@ -439,7 +439,7 @@ for (const nf of newFiles) {
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-900">
-                  <strong>Önemli:</strong> Müzik süresi maksimum 310 saniye olmalıdır. (5dk 10sn)
+                  <strong>Önemli:</strong> Seçmiş olduğunuz müziklerin toplam süresi süresi maksimum 310 saniye olmalıdır. (5dk 10sn)
                 </div>
               </div>
 
