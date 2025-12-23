@@ -218,13 +218,17 @@ Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`;
 
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
-  const [formData, setFormData] = useState({
-    musteriAdi: '',
-    telefon: '',
-    hazirMuzikId: '',
-    yukluDosyalar: [],
-    youtubeLink: '',
-  });
+const [formData, setFormData] = useState({
+  musteriAdi: '',
+  telefon: '',
+  hazirMuzikId: '',
+  yukluDosyalar: [],
+  youtubeLink: '',
+
+  // 👇 YENİ
+  ytStartSec: '',
+  ytEndSec: '',
+});
 
   const [showNotice, setShowNotice] = useState(false);
 
@@ -317,16 +321,35 @@ for (const nf of newFiles) {
       return;
     }
 
-    if (activeTab === 'internet') {
-      if (!formData.youtubeLink.trim()) {
-        alert('Lütfen bir YouTube linki girin!');
-        return;
-      }
-      if (!internetVideoId) {
-        alert('YouTube linki geçersiz görünüyor. Lütfen farklı bir link deneyin.');
-        return;
-      }
+if (activeTab === 'internet') {
+  const hasUpload = formData.yukluDosyalar.length > 0;
+  const hasManualRange =
+    formData.ytStartSec !== '' && formData.ytEndSec !== '';
+
+  if (!hasUpload && !hasManualRange) {
+    alert(
+      'YouTube seçimi için lütfen ya ses dosyasını yükleyin ya da süre aralığını belirtin.'
+    );
+    return;
+  }
+
+  if (hasManualRange) {
+    const start = Number(formData.ytStartSec);
+    const end = Number(formData.ytEndSec);
+
+    if (isNaN(start) || isNaN(end) || end <= start) {
+      alert('Lütfen geçerli bir başlangıç ve bitiş süresi girin.');
+      return;
     }
+
+    if (end - start > 310) {
+      alert(
+        'Seçilen süre 310 saniyeden uzun. Lütfen süreyi kısaltın veya dosya yükleyin.'
+      );
+      return;
+    }
+  }
+}
 
     const selectedSong = SONGS.find((s) => s.id === formData.hazirMuzikId);
 
@@ -532,6 +555,44 @@ for (const nf of newFiles) {
       </div>
     )}
   </>
+   {/* ⏱️ Süre Belirtme (Opsiyonel) */}
+<div className="mt-4 bg-white border border-amber-200 rounded-xl p-4">
+  <div className="text-sm font-semibold text-stone-800 mb-2">
+    Süre Belirt (Opsiyonel)
+  </div>
+
+  <p className="text-xs text-stone-600 mb-3">
+    Eğer şarkı uzunsa ve dosya yüklemek istemiyorsanız,
+    oyuncakta çalınmasını istediğiniz aralığı saniye cinsinden belirtin.
+    <br />
+    <b>Maksimum süre: 310 saniye</b>
+  </p>
+
+  <div className="flex gap-3">
+    <input
+      type="number"
+      min="0"
+      placeholder="Başlangıç (sn)"
+      value={formData.ytStartSec}
+      onChange={(e) =>
+        setFormData({ ...formData, ytStartSec: e.target.value })
+      }
+      className="w-1/2 px-3 py-2 border border-amber-200 rounded-lg text-sm"
+    />
+
+    <input
+      type="number"
+      min="0"
+      placeholder="Bitiş (sn)"
+      value={formData.ytEndSec}
+      onChange={(e) =>
+        setFormData({ ...formData, ytEndSec: e.target.value })
+      }
+      className="w-1/2 px-3 py-2 border border-amber-200 rounded-lg text-sm"
+    />
+  </div>
+</div>
+
 )}
 
               </div>
