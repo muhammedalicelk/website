@@ -675,6 +675,7 @@ function InternetMuzik({ youtubeLink, onChange, videoId }) {
    DOSYA TRIMMER (multi-file metadata fix + trim sırasında kırpma)
    ========================================================= */
 function DosyaTrimmer({ dosya, onRemove, onUpdate }) {
+  const MAX_DURATION = 310;
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeThumb, setActiveThumb] = useState(null);
   const audioRef = useRef(null);
@@ -834,15 +835,22 @@ useEffect(() => {
     if (audioRef.current && isPlaying) audioRef.current.currentTime = next;
   };
 
-  const handleEndChange = (e) => {
-    const step = getStep(e);
-    const raw = parseFloat(e.target.value);
-    const value = snap(raw, step);
-    const clamped = Math.max(value, dosya.trimStart + MIN_GAP);
-    const next = Math.min(dosya.duration, clamped);
+ const handleEndChange = (e) => {
+  const step = getStep(e);
+  const raw = parseFloat(e.target.value);
+  const value = snap(raw, step);
 
-    onUpdate(dosya.id, { trimEnd: next });
-  };
+  // HARD LIMIT
+  const hardEnd = Math.min(
+    dosya.trimStart + MAX_DURATION,
+    dosya.duration
+  );
+
+  const clamped = Math.max(value, dosya.trimStart + MIN_GAP);
+  const next = Math.min(clamped, hardEnd);
+
+  onUpdate(dosya.id, { trimEnd: next });
+};
 
   const handleWheel = (type, e) => {
     e.preventDefault();
@@ -853,11 +861,19 @@ useEffect(() => {
       const next = Math.min(Math.max(0, dosya.trimStart + dir), dosya.trimEnd - MIN_GAP);
       onUpdate(dosya.id, { trimStart: next });
       if (audioRef.current && isPlaying) audioRef.current.currentTime = next;
-    } else {
-      const next = Math.max(Math.min(dosya.duration, dosya.trimEnd + dir), dosya.trimStart + MIN_GAP);
-      onUpdate(dosya.id, { trimEnd: next });
-    }
-  };
+    } } else {
+  const hardEnd = Math.min(
+    dosya.trimStart + MAX_DURATION,
+    dosya.duration
+  );
+
+  const next = Math.max(
+    Math.min(dosya.trimEnd + dir, hardEnd),
+    dosya.trimStart + MIN_GAP
+  );
+
+  onUpdate(dosya.id, { trimEnd: next });
+}
 
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
   const startPct = dosya.duration ? (dosya.trimStart / dosya.duration) * 100 : 0;
