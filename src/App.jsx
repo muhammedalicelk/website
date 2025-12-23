@@ -554,7 +554,7 @@ if (activeTab === 'internet') {
         ))}
       </div>
     )}
-  </>
+  
    {/* ⏱️ Süre Belirtme (Opsiyonel) */}
 <div className="mt-4 bg-white border border-amber-200 rounded-xl p-4">
   <div className="text-sm font-semibold text-stone-800 mb-2">
@@ -592,7 +592,7 @@ if (activeTab === 'internet') {
     />
   </div>
 </div>
-
+</>
 )}
 
               </div>
