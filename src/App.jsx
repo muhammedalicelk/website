@@ -218,6 +218,7 @@ Katılım bedeli ve kargo daha sonraki aşamada paylaşılacaktır.`;
 
 export default function SesliOyuncakSiparis() {
   const [activeTab, setActiveTab] = useState('hazir');
+ const [ytDurationSec, setYtDurationSec] = useState(null);
 const [formData, setFormData] = useState({
   musteriAdi: '',
   telefon: '',
@@ -231,7 +232,18 @@ const [formData, setFormData] = useState({
 });
 
   const [showNotice, setShowNotice] = useState(false);
+useEffect(() => {
+  if (window.YT && window.YT.Player) return;
 
+  // zaten ekliysek tekrar ekleme
+  if (document.querySelector('script[data-yt-iframe-api="1"]')) return;
+
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  tag.async = true;
+  tag.dataset.ytIframeApi = '1';
+  document.body.appendChild(tag);
+}, []);
   useEffect(() => {
   setShowNotice(true);
 }, []);
@@ -350,7 +362,38 @@ if (activeTab === 'internet') {
     }
   }
 }
+if (activeTab === 'internet') {
+  if (!internetVideoId) {
+    alert('YouTube linki geçersiz görünüyor.');
+    return;
+  }
 
+  const hasUpload = formData.yukluDosyalar.length > 0;
+  const hasManualRange = formData.ytStartSec !== '' && formData.ytEndSec !== '';
+
+  if (ytDurationSec && ytDurationSec > 310 && !hasUpload && !hasManualRange) {
+    alert('Video 310 sn’den uzun. Lütfen dosya yükleyin veya süre aralığı belirtin.');
+    return;
+  }
+
+  if (hasManualRange) {
+    const start = Number(formData.ytStartSec);
+    const end = Number(formData.ytEndSec);
+
+    if (isNaN(start) || isNaN(end) || end <= start) {
+      alert('Lütfen geçerli bir başlangıç ve bitiş süresi girin.');
+      return;
+    }
+    if (end - start > 310) {
+      alert('Seçilen süre 310 sn’den uzun. Lütfen kısaltın.');
+      return;
+    }
+    if (ytDurationSec && end > ytDurationSec) {
+      alert('Bitiş süresi video süresinden büyük olamaz.');
+      return;
+    }
+  }
+}
     const selectedSong = SONGS.find((s) => s.id === formData.hazirMuzikId);
 
     try {
@@ -505,14 +548,28 @@ if (activeTab === 'internet') {
                     )}
                   </div>
                 )}
+{activeTab === 'internet' && internetVideoId && (
+  <div className="mt-3 text-xs text-stone-700">
+    {ytDurationSec
+      ? <>Video süresi: <b>{Math.floor(ytDurationSec / 60)}:{String(Math.floor(ytDurationSec % 60)).padStart(2,'0')}</b></>
+      : <>Video süresi okunuyor...</>
+    }
+  </div>
+)}
 
+{ytDurationSec && ytDurationSec > 310 && (
+  <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
+    Bu video <b>310 sn’den uzun</b>. Lütfen ya dosya yükleyin ya da aşağıdan süre aralığı belirtin.
+  </div>
+)}
 {activeTab === 'internet' && (
   <>
-    <InternetMuzik
-      youtubeLink={formData.youtubeLink}
-      onChange={(v) => setFormData({ ...formData, youtubeLink: v })}
-      videoId={internetVideoId}
-    />
+<InternetMuzik
+  youtubeLink={formData.youtubeLink}
+  onChange={(v) => setFormData({ ...formData, youtubeLink: v })}
+  videoId={internetVideoId}
+  onDuration={(sec) => setYtDurationSec(sec)}
+/>
 
     {/* YouTube için dosya yükleme */}
     <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -726,12 +783,73 @@ function HazirMuzikPicker({ formData, setFormData }) {
 /* =========================================================
    İNTERNETTEN MÜZİK (YouTube preview)
    ========================================================= */
-function InternetMuzik({ youtubeLink, onChange, videoId }) {
+function InternetMuzik({ youtubeLink, onChange, videoId, onDuration }) {
   const hasInput = (youtubeLink || '').trim().length > 0;
+  const playerRef = useRef(null);
+  const hostRef = useRef(null);
+
+  useEffect(() => {
+    if (!videoId) return;
+
+    let destroyed = false;
+
+    const createPlayer = () => {
+      if (destroyed) return;
+      if (!hostRef.current) return;
+      if (!(window.YT && window.YT.Player)) return;
+
+      // eski player varsa temizle
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+
+      playerRef.current = new window.YT.Player(hostRef.current, {
+        videoId,
+        width: '100%',
+        height: '220',
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+        },
+        events: {
+          onReady: () => {
+            const dur = playerRef.current.getDuration();
+            if (dur && dur > 0) onDuration?.(dur);
+          },
+          onStateChange: () => {
+            // bazı videolarda duration geç geliyor
+            const dur = playerRef.current.getDuration();
+            if (dur && dur > 0) onDuration?.(dur);
+          },
+        },
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        prev?.();
+        createPlayer();
+      };
+    }
+
+    return () => {
+      destroyed = true;
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+    };
+  }, [videoId]);
 
   return (
     <div>
-      <p className="text-sm text-stone-700 mb-3">YouTube linki gir (yapıştırınca otomatik önizleme çıkar):</p>
+      <p className="text-sm text-stone-700 mb-3">
+        YouTube linki gir (yapıştırınca otomatik önizleme çıkar):
+      </p>
 
       <input
         type="url"
@@ -741,13 +859,12 @@ function InternetMuzik({ youtubeLink, onChange, videoId }) {
         placeholder="https://youtube.com/watch?v=...  veya  https://youtu.be/..."
       />
 
-
-      {/* Hata / Bilgi */}
+      {/* Hata */}
       {hasInput && !videoId && (
         <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
           <div className="text-xs text-red-700">
-            Linki YouTube olarak okuyamadım. Şunlardan biri olmalı: <b>watch?v=</b>, <b>youtu.be/</b>, <b>shorts/</b>.
+            Linki YouTube olarak okuyamadım.
           </div>
         </div>
       )}
@@ -755,23 +872,19 @@ function InternetMuzik({ youtubeLink, onChange, videoId }) {
       {/* Preview */}
       {videoId && (
         <div className="mt-4">
-          <div className="text-sm font-semibold text-stone-700 mb-2">Önizleme:</div>
+          <div className="text-sm font-semibold text-stone-700 mb-2">
+            Önizleme:
+          </div>
           <div className="rounded-xl overflow-hidden border border-amber-100 bg-white">
-            <iframe
-              width="100%"
-              height="220"
-              src={`https://www.youtube.com/embed/${videoId}`}
-              title="YouTube Preview"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {/* 👇 YouTube iframe'ı BURAYA API basıyor */}
+            <div ref={hostRef} />
           </div>
         </div>
       )}
     </div>
   );
 }
+
 
 /* =========================================================
    DOSYA TRIMMER (multi-file metadata fix + trim sırasında kırpma)
