@@ -491,7 +491,7 @@ for (const nf of newFiles) {
       videoId={internetVideoId}
     />
 
-    {/* 👇 BURASI YENİ */}
+    {/* YouTube için dosya yükleme */}
     <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
       <div className="text-sm font-semibold text-stone-800 mb-2">
         Oyuncakta Duyulacak (16 kHz)
@@ -513,8 +513,27 @@ for (const nf of newFiles) {
         />
       </label>
     </div>
+
+    {/* 👇 BURAYA KOY */}
+    {formData.yukluDosyalar.length > 0 && (
+      <div className="mt-4 space-y-4">
+        <div className="text-sm font-medium text-stone-700">
+          Yüklediğin dosya(lar) – burada kırpabilirsin:
+        </div>
+
+        {formData.yukluDosyalar.map((dosya) => (
+          <DosyaTrimmer
+            key={dosya.id}
+            dosya={dosya}
+            onRemove={removeDosya}
+            onUpdate={updateDosya}
+          />
+        ))}
+      </div>
+    )}
   </>
 )}
+
               </div>
             </div>
 
