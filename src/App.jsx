@@ -439,7 +439,7 @@ for (const nf of newFiles) {
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-900">
-                  <strong>Önemli:</strong> Seçmiş olduğunuz müziklerin toplam süresi süresi maksimum 310 saniye olmalıdır. (5dk 10sn)
+                  <strong>Önemli:</strong> Seçmiş olduğunuz müziklerin toplam süresi süresi maksimum 310 saniye (5dk 10sn) olmalıdır. 
                 </div>
               </div>
 
