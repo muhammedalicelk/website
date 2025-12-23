@@ -741,9 +741,6 @@ function InternetMuzik({ youtubeLink, onChange, videoId }) {
         placeholder="https://youtube.com/watch?v=...  veya  https://youtu.be/..."
       />
 
-      <div className="mt-2 text-xs text-stone-600">
-        Not: Maksimum 310 saniyelik kısmı biz seçebiliriz.
-      </div>
 
       {/* Hata / Bilgi */}
       {hasInput && !videoId && (
