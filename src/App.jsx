@@ -483,13 +483,38 @@ for (const nf of newFiles) {
                   </div>
                 )}
 
-                {activeTab === 'internet' && (
-                  <InternetMuzik
-                    youtubeLink={formData.youtubeLink}
-                    onChange={(v) => setFormData({ ...formData, youtubeLink: v })}
-                    videoId={internetVideoId}
-                  />
-                )}
+{activeTab === 'internet' && (
+  <>
+    <InternetMuzik
+      youtubeLink={formData.youtubeLink}
+      onChange={(v) => setFormData({ ...formData, youtubeLink: v })}
+      videoId={internetVideoId}
+    />
+
+    {/* 👇 BURASI YENİ */}
+    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+      <div className="text-sm font-semibold text-stone-800 mb-2">
+        Oyuncakta Duyulacak (16 kHz)
+      </div>
+
+      <p className="text-xs text-stone-600 mb-3">
+        YouTube’dan ses dönüştürülmez. Oyuncakta duyulacak 16 kHz önizleme için
+        lütfen aynı müziğin dosyasını yükleyin (MP3 / WAV).
+      </p>
+
+      <label className="inline-flex items-center gap-2 cursor-pointer text-amber-800 font-medium">
+        <Upload className="w-4 h-4" />
+        Dosya Yükle
+        <input
+          type="file"
+          accept="audio/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+      </label>
+    </div>
+  </>
+)}
               </div>
             </div>
 
