@@ -688,16 +688,15 @@ useEffect(() => {
   if (!dosya.isReady) return;
   if (dosya.trimEnd <= dosya.trimStart) return;
 
-  // eski preview url'i temizle (memory leak olmasın)
-  if (dosya.preview16kUrl) {
-    URL.revokeObjectURL(dosya.preview16kUrl);
-  }
-
-  let cancelled = false;
-
-  (async () => {
+  // Kullanıcı sürüklüyorken spam üretme
+  const t = setTimeout(async () => {
     try {
-      // "file" objesini dosya'dan alıyoruz
+      // eski preview url'i temizle
+      if (dosya.preview16kUrl) URL.revokeObjectURL(dosya.preview16kUrl);
+
+      // "hazırlanıyor" göstermek için (istersen)
+      onUpdate(dosya.id, { preview16kReady: false });
+
       const wavBlob = await fileTo16kWavBlob(
         dosya.file,
         dosya.trimStart,
@@ -705,21 +704,14 @@ useEffect(() => {
         16000
       );
 
-      if (cancelled) return;
-
       const purl = URL.createObjectURL(wavBlob);
-      onUpdate(dosya.id, {
-        preview16kUrl: purl,
-        preview16kReady: true,
-      });
+      onUpdate(dosya.id, { preview16kUrl: purl, preview16kReady: true });
     } catch (e) {
       console.error('trim 16k failed', e);
     }
-  })();
+  }, 300); // 300ms: kasmayı ciddi azaltır (istersen 500 yap)
 
-  return () => {
-    cancelled = true;
-  };
+  return () => clearTimeout(t);
 }, [dosya.isReady, dosya.trimStart, dosya.trimEnd]);
   // metadata probe (2. dosya takılma fix)
   useEffect(() => {
