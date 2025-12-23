@@ -845,27 +845,31 @@ useEffect(() => {
 };
 
   const handleWheel = (type, e) => {
-    e.preventDefault();
-    const step = e.shiftKey ? STEP_FINE : STEP_NORMAL;
-    const dir = e.deltaY < 0 ? step : -step;
+  e.preventDefault();
+  const step = e.shiftKey ? STEP_FINE : STEP_NORMAL;
+  const dir = e.deltaY < 0 ? step : -step;
 
-    if (type === 'start') {
-      const next = Math.min(Math.max(0, dosya.trimStart + dir), dosya.trimEnd - MIN_GAP);
-      onUpdate(dosya.id, { trimStart: next });
-      if (audioRef.current && isPlaying) audioRef.current.currentTime = next;
-    } } else {
-  const hardEnd = Math.min(
-    dosya.trimStart + MAX_DURATION,
-    dosya.duration
-  );
+  if (type === 'start') {
+    const next = Math.min(
+      Math.max(0, dosya.trimStart + dir),
+      dosya.trimEnd - MIN_GAP
+    );
+    onUpdate(dosya.id, { trimStart: next });
+    if (audioRef.current && isPlaying) audioRef.current.currentTime = next;
+  } else {
+    const hardEnd = Math.min(
+      dosya.trimStart + MAX_DURATION,
+      dosya.duration
+    );
 
-  const next = Math.max(
-    Math.min(dosya.trimEnd + dir, hardEnd),
-    dosya.trimStart + MIN_GAP
-  );
+    const next = Math.max(
+      Math.min(dosya.trimEnd + dir, hardEnd),
+      dosya.trimStart + MIN_GAP
+    );
 
-  onUpdate(dosya.id, { trimEnd: next });
-}
+    onUpdate(dosya.id, { trimEnd: next });
+  }
+};
 
   const selectedDuration = dosya.trimEnd - dosya.trimStart;
   const startPct = dosya.duration ? (dosya.trimStart / dosya.duration) * 100 : 0;
